@@ -1,19 +1,58 @@
-import asyncio
+import uvicorn
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.cors import CORSMiddleware
+from redis.asyncio import Redis
 
-from utils.auth_2fa import QRCodeGenerator2FA, OTPGenerator
+from api import router
+from core.config import Config
+from core.middlewares import RefreshTTLMiddleware
+from service import SessionService
+from database.redis import get_redis_manually, SessionRepo
 
-from database.relational_db import RelationalDatabase
-from database.relational_db.tables.users_table import UsersTableInterface, AddUserModel
+
+config = Config()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    redis: Redis = await get_redis_manually()
+    app.state.session_service = SessionService(SessionRepo(redis))
+    try:
+        yield
+    finally:
+        await redis.close()
 
 
-async def main():
-    database = RelationalDatabase(UsersTableInterface)
-    await database.create_tables()
+app = FastAPI(
+    lifespan=lifespan,
+    title='Finance'
+)
 
-    db: UsersTableInterface = database
+# Including routers
+app.include_router(router)
 
-    # user = await db.get_user(*args)
-    # await QRCodeGenerator2FA.create_qr(user.secret, user.email)
+# Adding middlewares
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=config.SESSION_SECRET_KEY,
+    max_age=config.SESSION_LIFETIME,
+    session_cookie="session_id"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_methods=['*'],
+    allow_headers=['*'],
+    allow_credentials=True
+)
+
+app.add_middleware(
+    RefreshTTLMiddleware,
+    ttl=config.SESSION_LIFETIME
+)
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    uvicorn.run(app, host=config.API_HOST, port=config.API_PORT)

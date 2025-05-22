@@ -1,7 +1,10 @@
 from typing import Final
 from enum import Enum
 
+from core.config import Config
 from .exceptions import InvalidLibraryError
+
+config = Config()
 
 
 class DatabaseConfiguration:
@@ -11,11 +14,11 @@ class DatabaseConfiguration:
     ↳ Have a function that returning database URL\n
         ↳ Could be used as String.\n
     """
-    DB_HOST: Final[str] = "localhost"
-    DB_PORT: Final[int] = 5432
-    DB_USER: Final[str] = "postgres"
-    DB_PASS: Final[str] = "1"
-    DB_NAME: Final[str] = "test"
+    DB_HOST: Final[str] = config.DB_HOST
+    DB_PORT: Final[int] = config.DB_PORT
+    DB_USER: Final[str] = config.DB_USER
+    DB_PASS: Final[str] = config.DB_PASSWORD
+    DB_NAME: Final[str] = config.DB_NAME
 
     def create_database_url(self, type_of_database: Enum, database_library: Enum):
         try:

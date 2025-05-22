@@ -1,39 +1,43 @@
 import random
 import string
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from .users_table import UsersTable
-from .models import AddUserModel, UserModel
+from domain.users import UserRegister, UserLogin
+from .users_table import User
 
 
-class UsersTableInterface:
-    parent_table = UsersTable
-
-    @staticmethod
-    async def add_user(add_user_model: AddUserModel, session: AsyncSession = None) -> None:
-        session.add(
-            UsersTable(
-                email=add_user_model.email,
-                phone_number=add_user_model.phone_number,
-                password=add_user_model.password,
-                secure_code="".join([random.choice(string.ascii_letters) for _ in range(64)]),
-                secret=add_user_model.secret
+class UserInterface:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        
+        
+    async def create(self, payload: UserRegister) -> User:
+        user = User(
+            email=payload.email,
+            phone_number=payload.phone_number,
+            password=payload.password,
+            secure_code="".join([random.choice(string.ascii_letters) for _ in range(64)]),
+            secret=payload.secret
+        )
+        self.session.add(user)
+        await self.session.commit()
+        return user
+        
+        
+    async def get_by_email(self, payload: UserLogin) -> User:
+        query = (
+            select(User)
+            .where(
+                User.email == str(payload.email),
+                User.secret == payload.secret
             )
         )
-        await session.commit()
-
-    @staticmethod
-    async def get_user(uuid: str, secure_code: str, session: AsyncSession = None) -> UserModel:
-        user = (await session.execute(
-            select(UsersTable).where(UsersTable.id == uuid and UsersTable.secure_code == secure_code)
-        )).scalars().first()
-        return UserModel(
-            id=user.id,
-            email=user.email,
-            phone_number=user.phone_number,
-            secret=user.secret,
-            secure_code=user.secure_code,
-            password=user.password
-        )
+        user = await self.session.scalar(query)
+        return user
+    
+    
+    async def get_user(self, user_id: str) -> User:
+        user = await self.session.get(User, user_id)
+        return user
