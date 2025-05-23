@@ -6,6 +6,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from database.relational_db.tables import *
+from database.relational_db.tables.table_base import Base
 from database.relational_db.database_configuration import DatabaseConfiguration
 from database.relational_db.enums import AvailableDatabaseLibraries, AvailableDatabases
 
@@ -15,6 +16,7 @@ DATABASE_URL = db_config.create_database_url(
     AvailableDatabases.POSTGRESQL, 
     AvailableDatabaseLibraries.ASYNCPG
 )
+print(DATABASE_URL)
 
 # Alembic Config object
 config = context.config
@@ -22,6 +24,7 @@ config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 fileConfig(config.config_file_name)
 target_metadata = Base.metadata
+print("Tables in metadata:", list(target_metadata.tables.keys()))
 
 
 def run_migrations_offline() -> None:
@@ -59,7 +62,6 @@ def run_migrations() -> None:
         run_migrations_offline()
     else:
         asyncio.run(run_migrations_online())
-
-
+        
 if __name__ == "__main__":
     run_migrations()
