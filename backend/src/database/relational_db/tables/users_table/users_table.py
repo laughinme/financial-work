@@ -1,19 +1,18 @@
-from sqlalchemy.orm import mapped_column
+import uuid
+from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy import UUID, String
 
-import uuid_utils
-
-from ..table_base import TableBase
+from ..table_base import Base
 
 
-class UsersTable(TableBase):
-    __tablename__ = "users_table"
+class User(Base):
+    __tablename__ = "users"
 
-    id = mapped_column(UUID(as_uuid=True), default=uuid_utils.uuid7, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), default=uuid.uuid4, primary_key=True)
 
-    email = mapped_column(String, unique=True)
-    phone_number = mapped_column(String, unique=True)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=True)
+    phone_number: Mapped[str] = mapped_column(String, unique=True, nullable=True)
 
-    password = mapped_column(String, nullable=False)
-    secure_code = mapped_column(String, nullable=False)
-    secret = mapped_column(String)
+    password: Mapped[str] = mapped_column(String, nullable=False)
+    secure_code: Mapped[str] = mapped_column(String, nullable=False)
+    secret: Mapped[str] = mapped_column(String)
