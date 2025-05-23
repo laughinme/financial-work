@@ -5,6 +5,7 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
+# from core.config import Config
 from database.relational_db.tables import *
 from database.relational_db.tables.table_base import Base
 from database.relational_db.database_configuration import DatabaseConfiguration
@@ -17,6 +18,10 @@ DATABASE_URL = db_config.create_database_url(
     AvailableDatabaseLibraries.ASYNCPG
 )
 print(DATABASE_URL)
+
+# settings = Config()
+# DATABASE_URL = settings.DB_URL
+# print(DATABASE_URL)
 
 # Alembic Config object
 config = context.config
@@ -63,5 +68,5 @@ def run_migrations() -> None:
     else:
         asyncio.run(run_migrations_online())
         
-if __name__ == "__main__":
-    run_migrations()
+
+run_migrations()

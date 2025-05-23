@@ -10,8 +10,8 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), default=uuid.uuid4, primary_key=True)
 
-    email: Mapped[str] = mapped_column(String, unique=True)
-    phone_number: Mapped[str] = mapped_column(String, unique=True)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=True)
+    phone_number: Mapped[str] = mapped_column(String, unique=True, nullable=True)
 
     password: Mapped[str] = mapped_column(String, nullable=False)
     secure_code: Mapped[str] = mapped_column(String, nullable=False)

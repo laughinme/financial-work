@@ -24,6 +24,17 @@ class Config(BaseSettings):
     REDIS_HOST: str
     REDIS_PORT: int
     
+    @property
+    def DB_URL(self) -> str:
+        return (
+            f"postgresql+asyncpg://"
+            f"{self.DB_USER}:"
+            f"{self.DB_PASSWORD}@"
+            f"{self.DB_HOST}:"
+            f"{self.DB_PORT}/"
+            f"{self.DB_NAME}"
+        )
+    
     class Config:
         env_file = f'{BASE_DIR}/.env'
     

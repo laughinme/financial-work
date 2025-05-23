@@ -5,10 +5,10 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 
-from api import router
+from api import get_api_routers
+from service import SessionService
 from core.config import Config
 from core.middlewares import RefreshTTLMiddleware
-from service import SessionService
 from database.redis import get_redis_manually, SessionRepo
 
 
@@ -30,7 +30,7 @@ app = FastAPI(
 )
 
 # Including routers
-app.include_router(router)
+app.include_router(get_api_routers())
 
 # Adding middlewares
 app.add_middleware(

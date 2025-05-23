@@ -33,7 +33,7 @@ class UserService():
         return user
     
     
-    async def login(self, request: Request, payload: UserLogin) -> User:
+    async def login(self, request: Request, payload: UserLogin, ttl: int) -> User:
         user = await self.user_repo.get_by_email(payload)
         if user is None:
             raise WrongCredentials()
@@ -43,7 +43,7 @@ class UserService():
             print(e)
             raise WrongCredentials()
         
-        session_id = await self.session_service.create_session(user.id)
+        session_id = await self.session_service.create_session(user.id, ttl)
         request.session['session_id'] = session_id
         
         return user

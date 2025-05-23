@@ -4,5 +4,5 @@ from uuid import UUID
 
 class UserSchema(BaseModel):
     id: UUID
-    email: str
-    phone_number: str
+    email: str | None
+    phone_number: str | None
