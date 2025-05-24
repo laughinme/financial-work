@@ -7,7 +7,7 @@ class UserRegister(BaseModel):
     phone_number: str | None = Field(None)
     
     password: str = Field(...)
-    secret: str = Field(...)
+    # secret: str = Field(...)
     
     @model_validator(mode='after')
     def validator(self) -> Self:
@@ -21,4 +21,4 @@ class UserLogin(BaseModel):
     phone_number: str | None = Field(None)
 
     password: str = Field(...)
-    secret: str = Field(...)
+    # secret: str = Field(...)

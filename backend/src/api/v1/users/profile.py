@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Request
 from core.config import Config
 from core.security import auth_user
 from database.relational_db import User
-from ..schemas import UserSchema
+from domain.users import UserSchema
 
 config = Config()
 router = APIRouter()

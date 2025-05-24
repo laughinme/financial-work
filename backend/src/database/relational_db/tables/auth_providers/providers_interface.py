@@ -1,9 +1,9 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from domain.users import Provider
 
 from .providers_table import AuthProvider
 from ..users import User
-from ..enums import Provider
 
 
 class AuthProvidersInterface:
@@ -28,7 +28,7 @@ class AuthProvidersInterface:
         return new_provider
     
     
-    async def find(
+    async def find_for_provider(
         self,
         provider: Provider,
         provider_user_id: str
@@ -40,6 +40,7 @@ class AuthProvidersInterface:
                 AuthProvider.provider == provider
             )
         )
+        
         return result
     
     
