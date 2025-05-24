@@ -1,4 +1,5 @@
 import uvicorn
+import yookassa
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from starlette.middleware.sessions import SessionMiddleware
