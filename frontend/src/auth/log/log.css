@@ -1,0 +1,39 @@
+.container{
+    border: solid 2px;
+    width: 300px;
+    height: 300px;
+    border-radius: 15px ;
+}
+.regplace{
+    display: grid;
+    gap: 20px;
+    justify-content: center;
+    
+    
+}
+.btns{
+    display: grid;
+    gap: 10px;
+}
+.email{
+    width: 200px;
+    height: 20px;
+}
+.header{
+    display: flex;
+    justify-content: center;
+}
+.login{
+    border-radius: 5px;
+    background-color: white;
+    color: black;
+    
+}
+.reg{
+    background-color: black;
+    color: white;
+    border-radius: 5px;
+    border: 0;
+    height: 25px;
+}
+
