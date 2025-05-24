@@ -1,1 +1,2 @@
-from .database import RelationalDatabase
+from .tables import *
+from .session import get_db
