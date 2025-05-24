@@ -1,2 +1,2 @@
-from .telegram_user_table import TelegramUser
-from .tg_table_interface import TgUserInterface
+from .telegram_user_table import TelegramProvider
+from .tg_table_interface import TelegramInterface

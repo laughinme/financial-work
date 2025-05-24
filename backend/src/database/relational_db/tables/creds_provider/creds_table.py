@@ -21,6 +21,4 @@ class CredsProvider(Base):
     # We can add it if we need to
     # secret: Mapped[str] = mapped_column(String)
     
-    auth_provider: Mapped["AuthProvider"] = relationship( # type: ignore
-        back_populates="user", cascade="all, delete-orphan"
-    )
+    auth_provider: Mapped["AuthProvider"] = relationship(back_populates="credentials") # type: ignore

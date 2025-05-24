@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Request, Query
 
 from core.config import Config
-from service import UserService, get_user_service
-from domain.users import UserSchema, TelegramAuth, TelegramUserSchema
+from domain.users import UserSchema, TelegramAuthSchema
+from service.auth import TelegramService, get_telegram_service
 
 
 config = Config()
@@ -11,14 +11,15 @@ router = APIRouter()
 
 @router.post(
     path='/telegram/callback',
-    response_model=TelegramUserSchema
+    response_model=UserSchema
 )
 async def auth_telegram_widget(
     request: Request,
-    payload: TelegramAuth,
-    ?_service: 
+    payload: TelegramAuthSchema,
+    telegram_service: TelegramService = Depends(get_telegram_service)
 ):
-
+    user = await telegram_service.login(request, payload, config.SESSION_LIFETIME)
+    return user
 
 
 # TODO: add redirect page support

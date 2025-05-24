@@ -6,7 +6,7 @@ def get_auth_routers() -> APIRouter:
     from .login import router as login_router
     from .registration import router as register_router
     
-    router = APIRouter(prefix='/external')
+    router = APIRouter(prefix='/auth')
     
     router.include_router(get_auth_external_routers())
     router.include_router(login_router)

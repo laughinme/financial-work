@@ -1,10 +1,9 @@
 import uuid
-from enum import Enum
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import UUID, String, Integer, ForeignKey, UniqueConstraint
+from sqlalchemy import UUID, String, Integer, ForeignKey, UniqueConstraint, Enum
 
+from domain.users import Provider
 from ..table_base import Base
-from ..enums import Provider
 
 
 class AuthProvider(Base):
@@ -23,9 +22,18 @@ class AuthProvider(Base):
     )
     
     user: Mapped["User"] = relationship("User", back_populates="providers") # type: ignore
+    
     credentials: Mapped["CredsProvider"] = relationship( # type: ignore
         "CredsProvider",
         uselist=False,
         back_populates="auth_provider",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        single_parent=True
+    )
+    telegram: Mapped["TelegramProvider"] = relationship( # type: ignore
+        "TelegramProvider",
+        uselist=False,
+        back_populates="auth_provider",
+        cascade="all, delete-orphan",
+        single_parent=True
     )
