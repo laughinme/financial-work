@@ -1,1 +1,1 @@
-from .users_table import User, UserInterface
+from .users import User, UserInterface

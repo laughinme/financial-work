@@ -22,5 +22,3 @@ class UserLogin(BaseModel):
 
     password: str = Field(...)
     secret: str = Field(...)
-    
-    

@@ -13,3 +13,5 @@ async def get_user_service(
     user_repo = UserInterface(session)
     return UserService(user_repo, session_service)
     
+    
+async def get_tg_user_service
