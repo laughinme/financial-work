@@ -3,7 +3,15 @@ import hashlib
 
 from fastapi import Request
 
-from database.relational_db import UserInterface, User, TelegramInterface, AuthProvidersInterface
+from database.relational_db import (
+    UserInterface,
+    User,
+    TelegramInterface,
+    TelegramProvider,
+    AuthProvidersInterface,
+    AuthProvider,
+    UoW
+)
 from domain.users import TelegramAuthSchema, Provider
 from core.config import Config
 from .exceptions import InvalidTelegramSignature
@@ -19,12 +27,14 @@ class TelegramService():
         tg_repo: TelegramInterface,
         auth_repo: AuthProvidersInterface,
         user_repo: UserInterface,
-        session_service: SessionService
+        session_service: SessionService,
+        uow: UoW
     ):
         self.tg_repo = tg_repo
         self.auth_repo = auth_repo
         self.user_repo = user_repo
         self.session_service = session_service
+        self.uow = uow
         
 
     @staticmethod
@@ -52,15 +62,26 @@ class TelegramService():
         payload: TelegramAuthSchema,
         ttl: int
     ) -> User:
-        self.verify(payload)
+        # self.verify(payload)
         
-        provider = await self.auth_repo.find_for_provider(Provider.TELEGRAM, payload.id)
-        if provider is None:
-            user = await self.user_repo.create()
-            provider = await self.auth_repo.create(Provider.TELEGRAM, str(payload.id), user)
-            await self.tg_repo.create(payload, provider.id)
-        else:
-            await self.tg_repo.get_by_id(provider.id)
+        identifier = str(payload.id)
+        
+        async with self.uow:
+            user = await self.tg_repo.get_user_by_tg(identifier)
+            if user is None:
+                user = self.user_repo.create()
+                auth = AuthProvider(
+                    provider=Provider.TELEGRAM,
+                    provider_user_id=identifier,
+                    telegram=TelegramProvider(
+                        first_name=payload.first_name,
+                        last_name=payload.last_name,
+                        username=payload.username,
+                        photo_url=payload.photo_url,
+                    )
+                )
+                user.providers.append(auth)
+            await self.user_repo.add(user)
         
         session_id = await self.session_service.create_session(user.id, ttl)
         request.session['session_id'] = session_id

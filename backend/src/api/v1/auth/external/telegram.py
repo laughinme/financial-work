@@ -39,4 +39,3 @@ async def auth_telegram_widget(
 #     hash: str = Query(...),
 # ) -> None:
 #     pass
-
