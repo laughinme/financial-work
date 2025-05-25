@@ -175,9 +175,4 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-
-
-<<<<<<< Updated upstream
 node_modules/
-=======
->>>>>>> Stashed changes
