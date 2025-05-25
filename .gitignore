@@ -177,4 +177,7 @@ cython_debug/
 
 
 
-/node_modules
+<<<<<<< Updated upstream
+node_modules/
+=======
+>>>>>>> Stashed changes
