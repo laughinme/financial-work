@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.get(
-    path="/me",
+    path="/",
     response_model=UserSchema
 )
 async def get_me(
