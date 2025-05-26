@@ -4,9 +4,10 @@ from sqlalchemy import UUID, String, Integer, ForeignKey, UniqueConstraint, Enum
 
 from domain.users import Provider
 from ..table_base import Base
+from ..mixins import TimestampMixin
 
 
-class AuthProvider(Base):
+class AuthProvider(TimestampMixin, Base):
     __tablename__ = "auth_providers"
 
     user_id: Mapped[uuid.UUID] = mapped_column(

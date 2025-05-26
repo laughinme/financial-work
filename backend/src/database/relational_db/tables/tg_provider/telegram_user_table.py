@@ -2,9 +2,10 @@ from sqlalchemy.orm import mapped_column, Mapped, relationship
 from sqlalchemy import String, Integer, ForeignKey
 
 from ..table_base import Base
+from ..mixins import TimestampMixin
 
 
-class TelegramProvider(Base):
+class TelegramProvider(TimestampMixin, Base):
     __tablename__ = "telegram_providers"
 
     id: Mapped[int] = mapped_column(
