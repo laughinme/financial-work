@@ -9,39 +9,27 @@ from ..users import User
 class AuthProvidersInterface:
     def __init__(self, session: AsyncSession):
         self.session = session
-        
-        
-    async def create(
+
+
+    async def add(
         self, 
-        provider: Provider,
-        provider_user_id: str,
-        user: User
+        auth_provider: AuthProvider
     ) -> AuthProvider:
-        new_provider = AuthProvider(
-            user_id=user.id,
-            provider=provider,
-            provider_user_id=provider_user_id
-        )
-        self.session.add(new_provider)
-        await self.session.commit()
-        
-        return new_provider
-    
-    
+        self.session.add(auth_provider)
+        return auth_provider
+
+
     async def find_for_provider(
         self,
         provider: Provider,
-        provider_user_id: str
+        identifier: str
     ) -> AuthProvider | None:
         result = await self.session.scalar(
             select(AuthProvider)
             .where(
-                AuthProvider.provider_user_id == provider_user_id,
+                AuthProvider.provider_user_id == identifier,
                 AuthProvider.provider == provider
             )
         )
-        
+
         return result
-    
-    
-    

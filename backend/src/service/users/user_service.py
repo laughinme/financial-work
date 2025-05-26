@@ -1,7 +1,6 @@
 from fastapi import Request
 
 from database.relational_db import UserInterface, User
-
 from .exceptions import NotAuthenticated
 from ..auth import SessionService
 
@@ -25,5 +24,5 @@ class UserService():
             raise NotAuthenticated()
         user_id = data['sub']
         
-        user = await self.user_repo.get_user(user_id)
+        user = await self.user_repo.get_by_id(user_id)
         return user
