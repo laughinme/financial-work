@@ -1,14 +1,13 @@
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.relational_db import UserInterface, get_db
+from database.relational_db import UserInterface, get_uow, UoW
 from .user_service import UserService
 from ..auth.session import get_session_service, SessionService
 
 
 async def get_user_service(
     session_service: SessionService = Depends(get_session_service),
-    session: AsyncSession = Depends(get_db)
+    uow: UoW = Depends(get_uow)
 ) -> UserService:
-    user_repo = UserInterface(session)
+    user_repo = UserInterface(uow.session)
     return UserService(user_repo, session_service)

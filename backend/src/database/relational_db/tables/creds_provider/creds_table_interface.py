@@ -1,8 +1,10 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from domain.users import UserRegister
+from domain.users import UserRegister, Provider
 from .creds_table import CredsProvider
+from ..auth_providers import AuthProvider
+from ..users import User
 
 
 class CredentialsInterface:
@@ -37,3 +39,19 @@ class CredentialsInterface:
         )
         
         return provider
+    
+    
+    async def get_user_and_password(
+        self, identifier: str
+    ) -> tuple[User, str] | None:
+        query = (
+            select(User, CredsProvider.password)
+            .join_from(User, AuthProvider)
+            .join(CredsProvider)
+            .where(
+                AuthProvider.provider == Provider.CREDENTIALS,
+                AuthProvider.provider_user_id == identifier,
+            )
+        )
+        result = await self.session.execute(query)
+        return result.one_or_none()
