@@ -2,6 +2,7 @@ import hmac
 import hashlib
 
 from fastapi import Request
+from sqlalchemy.exc import IntegrityError
 
 from database.relational_db import (
     UserInterface,
@@ -14,7 +15,7 @@ from database.relational_db import (
 )
 from domain.users import TelegramAuthSchema, Provider
 from core.config import Config
-from .exceptions import InvalidTelegramSignature
+from .exceptions import InvalidTelegramSignature, AlreadyLinked
 from ..session import SessionService
 
 
@@ -38,7 +39,7 @@ class TelegramService():
         
 
     @staticmethod
-    def verify(payload: TelegramAuthSchema):
+    def _verify(payload: TelegramAuthSchema) -> None:
         data = payload.model_dump()
         check_hash = data.pop("hash")
         
@@ -54,6 +55,18 @@ class TelegramService():
             raise InvalidTelegramSignature()
         
         # TODO: check if authorization is expired
+        
+        
+    @staticmethod
+    def _fill_profile_from_tg(user: User, payload: TelegramAuthSchema) -> None:
+        if not user.display_name:
+            user.display_name = payload.first_name or payload.username or f"tg_{payload.id}"
+        if not user.first_name:
+            user.first_name = payload.first_name
+        if not user.last_name:
+            user.last_name = payload.last_name
+        if not user.avatar_url and payload.photo_url:
+            user.avatar_url = payload.photo_url
     
     
     async def login(
@@ -62,7 +75,7 @@ class TelegramService():
         payload: TelegramAuthSchema,
         ttl: int
     ) -> User:
-        self.verify(payload)
+        self._verify(payload)
         
         identifier = str(payload.id)
         
@@ -82,8 +95,43 @@ class TelegramService():
                 )
                 user.providers.append(auth)
             await self.user_repo.add(user)
+            self._fill_profile_from_tg(user, payload)
         
         session_id = await self.session_service.create_session(user.id, ttl)
         request.session['session_id'] = session_id
         
+        return user
+    
+    
+    async def link(
+        self,
+        payload: TelegramAuthSchema,
+        user: User,
+        replace_fields: bool = False
+    ) -> None:
+        self._verify(payload)
+        
+        identifier = str(payload.id)
+        
+        auth = AuthProvider(
+            user_id=user.id,
+            provider=Provider.TELEGRAM,
+            provider_user_id=identifier,
+            telegram=TelegramProvider(
+                first_name=payload.first_name,
+                last_name=payload.last_name,
+                username=payload.username,
+                photo_url=payload.photo_url,
+            )
+        )
+        await self.auth_repo.add(auth)
+        
+        if replace_fields:
+            self._fill_profile_from_tg(user, payload)
+        
+        try:
+            await self.uow.session.flush()
+        except IntegrityError:
+            raise AlreadyLinked()
+            
         return user

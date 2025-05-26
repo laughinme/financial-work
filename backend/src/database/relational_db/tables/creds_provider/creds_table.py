@@ -1,11 +1,11 @@
-import uuid
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import UUID, String, UniqueConstraint, ForeignKey, Integer, Boolean
+from sqlalchemy import String, ForeignKey, Integer, Boolean
 
 from ..table_base import Base
+from ..mixins import TimestampMixin
 
 
-class CredsProvider(Base):
+class CredsProvider(TimestampMixin, Base):
     __tablename__ = "credentials_providers"
 
     id: Mapped[int] = mapped_column(
