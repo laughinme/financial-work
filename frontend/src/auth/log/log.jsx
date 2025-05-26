@@ -1,42 +1,69 @@
 import React, { useState } from 'react';
-import './log.css';
-
+import { FiEye, FiEyeOff } from 'react-icons/fi';
+import './Log.css';
 
 function Log({ onSwitch }) {
-  const [emailr, setEmailr] = useState('');
-  const [passwordr, setPasswordr] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
 
-
-  const handleLogin = () => {
- 
-    alert(`Почта: ${emailr}\nПароль: ${passwordr}`);
-   
+  const handleSubmit = e => {
+    e.preventDefault();
+    alert(`Email: ${email}\nPassword: ${password}`);
   };
 
   return (
-    <div className='container'>
-      <div className='regplace'>
-        <h1 className='header'>Log in</h1>
+    <form className="login-card" onSubmit={handleSubmit}>
+    
+      <label className="field-label" htmlFor="email">Email Address</label>
+      <div className="input-wrapper">
         <input
-          className='email'
+          id="email"
           type="email"
-          placeholder='Email/Телефон'
-          value={emailr}
-          onChange={e => setEmailr(e.target.value)}
+          placeholder="example@gmail.com"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
         />
-        <input
-          className='email'
-          type="password"
-          placeholder='Пароль'
-          value={passwordr}
-          onChange={e => setPasswordr(e.target.value)}
-        />
-        <div className='btns'>
-          <button className='reg' type="button" onClick={handleLogin}>Log in</button>
-          <button className='login' type="button" onClick={onSwitch}>Create an account</button>
-        </div>
       </div>
-    </div>
+
+      <label className="field-label" htmlFor="password">Password</label>
+      <div className="input-wrapper password">
+        <input
+          id="password"
+          type={showPass ? 'text' : 'password'}
+          placeholder="••••••••••"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+        />
+        <button
+          type="button"
+          className="toggle-pass"
+          onClick={() => setShowPass(!showPass)}
+          aria-label={showPass ? 'Hide password' : 'Show password'}
+        >
+          {showPass ? <FiEyeOff /> : <FiEye />}
+        </button>
+      </div>
+
+     
+      <div className="options-row">
+        <label className="remember">
+          <input type="checkbox" />
+          <span>Remember me</span>
+        </label>
+
+        <button type="button" className="reset">Reset Password?</button>
+      </div>
+
+      
+      <button type="submit" className="primary-btn">Log in</button>
+
+      
+      <p className="footer">
+        Don’t have account yet?
+        <button type="button" className="link" onClick={onSwitch}> New Account</button>
+      </p>
+    </form>
   );
 }
 
