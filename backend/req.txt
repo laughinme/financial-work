@@ -40,3 +40,4 @@ typing_extensions==4.13.2
 uuid_utils==0.10.0
 uvicorn==0.34.2
 yarl==1.20.0
+yookassa==3.5.0

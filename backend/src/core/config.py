@@ -26,6 +26,13 @@ class Config(BaseSettings):
     
     # Telegram bot settings
     BOT_TOKEN: str
+
+    # Payment system settings
+    YOOKASSA_ACCOUNT_ID: str
+    YOOKASSA_SECRET: str
+
+    # Site data (url, paths)
+    SITE_URL: str
     
     # @property
     # def DB_URL(self) -> str:
