@@ -26,16 +26,16 @@ class YooKassaService:
             },
             "confirmation": {
                 "type": "redirect",
-                "return_url": "https://example.com"
+                "return_url": config.SITE_URL
             },
             "description": payload.description
         }, uuid_utils.uuid7()
         )["confirmation"]["confirmation_url"]
     
     @staticmethod
-    async def get_payment_info(uuid: str):
-        ...
+    async def get_payment_info(uuid: str) -> dict:
+        return await asyncio.to_thread(YooKassaService._get_payment_info, uuid)
 
     @staticmethod
-    def _get_payment_info(uuid: str):
-        ...
+    def _get_payment_info(uuid: str) -> dict:
+        return yookassa.Payment.find_one(uuid)
