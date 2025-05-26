@@ -10,6 +10,7 @@ config = Config()
 yookassa.Configuration.account_id = config.YOOKASSA_ACCOUNT_ID
 yookassa.Configuration.secret_key = config.YOOKASSA_SECRET
 
+
 class YooKassaService:
     @staticmethod 
     async def create_payment(payload):
@@ -30,3 +31,11 @@ class YooKassaService:
             "description": payload.description
         }, uuid_utils.uuid7()
         )["confirmation"]["confirmation_url"]
+    
+    @staticmethod
+    async def get_payment_info(uuid: str):
+        ...
+
+    @staticmethod
+    def _get_payment_info(uuid: str):
+        ...
