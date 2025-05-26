@@ -62,7 +62,7 @@ class TelegramService():
         payload: TelegramAuthSchema,
         ttl: int
     ) -> User:
-        # self.verify(payload)
+        self.verify(payload)
         
         identifier = str(payload.id)
         
