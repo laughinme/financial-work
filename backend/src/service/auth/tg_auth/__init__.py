@@ -1,8 +1,8 @@
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.relational_db import (
-    get_db,
+    UoW,
+    get_uow,
     TelegramInterface,
     AuthProvidersInterface,
     UserInterface,
@@ -12,13 +12,13 @@ from ..session import get_session_service, SessionService
 
 
 async def get_telegram_service(
-    session: AsyncSession = Depends(get_db),
+    uow: UoW = Depends(get_uow),  
     session_service: SessionService = Depends(get_session_service),
 ) -> TelegramService:
-    tg_repo = TelegramInterface(session)
-    auth_repo = AuthProvidersInterface(session)
-    user_repo = UserInterface(session)
+    tg_repo = TelegramInterface(uow.session)
+    auth_repo = AuthProvidersInterface(uow.session)
+    user_repo = UserInterface(uow.session)
     
     return TelegramService(
-        tg_repo, auth_repo, user_repo, session_service
+        tg_repo, auth_repo, user_repo, session_service, uow
     )
