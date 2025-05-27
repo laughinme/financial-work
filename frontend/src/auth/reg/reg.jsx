@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { FiEye, FiEyeOff } from 'react-icons/fi'; 
-import './Reg.css';       
+import { FiEye, FiEyeOff } from 'react-icons/fi';
+import './Reg.css';
 
 function Reg({ onSwitch }) {
   const [email, setEmail] = useState('');
@@ -16,6 +16,9 @@ function Reg({ onSwitch }) {
 
   return (
     <form className="login-card" onSubmit={handleSave}>
+   
+      <h1 className="form-title">Registration</h1>
+
 
       <label className="field-label" htmlFor="email">Email Address</label>
       <div className="input-wrapper">
@@ -51,9 +54,8 @@ function Reg({ onSwitch }) {
         </button>
       </div>
 
-      
-      <button type="submit" className="primary-btn">Create an account</button>
 
+      <button type="submit" className="primary-btn">Create an account</button>
 
       <p className="footer">
         Already have an account?
@@ -64,4 +66,3 @@ function Reg({ onSwitch }) {
 }
 
 export default Reg;
-
