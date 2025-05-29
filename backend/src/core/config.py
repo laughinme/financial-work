@@ -34,18 +34,9 @@ class Config(BaseSettings):
     # Site data (url, paths)
     SITE_URL: str
     
-    # @property
-    # def DB_URL(self) -> str:
-    #     return (
-    #         f"postgresql+asyncpg://"
-    #         f"{self.DB_USER}:"
-    #         f"{self.DB_PASSWORD}@"
-    #         f"{self.DB_HOST}:"
-    #         f"{self.DB_PORT}/"
-    #         f"{self.DB_NAME}"
-    #     )
+    # External services data
+    MYFXBOOK_LOGIN: str
+    MYFXBOOK_PASSWORD: str
     
     class Config:
         env_file = f'{BASE_DIR}/.env'
-    
-    

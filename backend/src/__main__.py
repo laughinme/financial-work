@@ -10,15 +10,21 @@ from webhooks import get_webhooks
 from service import SessionService
 from core.config import Config
 from core.middlewares import RefreshTTLMiddleware
-from database.redis import get_redis_manually, SessionRepo
+from database.redis import get_redis, SessionRepo
+from scheduler import init_scheduler
 
 
 config = Config()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    redis: Redis = await get_redis_manually()
+    # Ensure session service for RefreshTTLMiddleware
+    redis: Redis = get_redis()
     app.state.session_service = SessionService(SessionRepo(redis))
+    
+    # Start APScheduler
+    init_scheduler()
+    
     try:
         yield
     finally:
