@@ -39,3 +39,25 @@ class YooKassaService:
     @staticmethod
     def _get_payment_info(uuid: str) -> dict:
         return yookassa.Payment.find_one(uuid)
+    
+    @staticmethod
+    async def payout(payload):
+        return await asyncio.to_thread(YooKassaService._payout, payload)
+    
+    @staticmethod
+    def _payout(payload):
+        return yookassa.Payout.create(
+            {
+                "amount": {
+                    "value": payload.value,
+                    "currency": payload.currency
+                },
+                "payout_destination_data": {
+                    "type": "bank_card",
+                    "card": {
+                        "number": payload.card_number
+                    }
+                },
+                "description": payload.description,
+            }, str(uuid_utils.uuid7())
+        )
