@@ -40,7 +40,7 @@ function Reg({ onSwitch }) {
     localStorage.setItem('email', email);
     localStorage.setItem('password', password);
     alert('Сохранено в LocalStorage (для теста)');
-    window.location.href = '/src/main.html';
+    window.location.href = '/main.html';
   };
 
   return (

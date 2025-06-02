@@ -39,7 +39,7 @@ function Log({ onSwitch, onReset }) {
   const handleSubmit = e => {
     e.preventDefault();
     alert(`Email: ${email}\nPassword: ${password}`);
-    window.location.href = '/src/main.html';
+    window.location.href = '/main.html';
   };
 
   return (
