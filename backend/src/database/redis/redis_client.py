@@ -7,13 +7,11 @@ config = Config()
 
 redis_client = Redis(
     host=config.REDIS_HOST,
-    port=config.REDIS_PORT
+    port=config.REDIS_PORT,
+    decode_responses=True
 )
 
-async def get_redis() -> AsyncGenerator[Redis, None]:
+def get_redis() -> Redis:
     "Returns prepared Redis session"
-    yield redis_client
-    
-
-async def get_redis_manually() -> Redis:
     return redis_client
+    

@@ -5,7 +5,7 @@ from .exceptions import NotAuthenticated
 from ..auth import SessionService
 
 
-class UserService():
+class UserService:
     def __init__(
         self,
         user_repo: UserInterface,

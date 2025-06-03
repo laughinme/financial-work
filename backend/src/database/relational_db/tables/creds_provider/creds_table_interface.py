@@ -12,21 +12,12 @@ class CredentialsInterface:
         self.session = session
         
         
-    async def create(
+    async def add(
         self,
-        auth_providers_id: int,
-        payload: UserRegister
+        creds_provider: CredsProvider
     ) -> CredsProvider:
-        
-        creds = CredsProvider(
-            id=auth_providers_id,
-            is_email=payload.phone_number is None,
-            password=payload.password
-        )
-        self.session.add(creds)
-        await self.session.commit()
-        
-        return creds
+        self.session.add(creds_provider)
+        return creds_provider
         
         
     async def get_by_id(
