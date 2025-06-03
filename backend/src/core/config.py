@@ -24,18 +24,19 @@ class Config(BaseSettings):
     REDIS_HOST: str
     REDIS_PORT: int
     
-    @property
-    def DB_URL(self) -> str:
-        return (
-            f"postgresql+asyncpg://"
-            f"{self.DB_USER}:"
-            f"{self.DB_PASSWORD}@"
-            f"{self.DB_HOST}:"
-            f"{self.DB_PORT}/"
-            f"{self.DB_NAME}"
-        )
+    # Telegram bot settings
+    BOT_TOKEN: str
+
+    # Payment system settings
+    YOOKASSA_ACCOUNT_ID: str
+    YOOKASSA_SECRET: str
+
+    # Site data (url, paths)
+    SITE_URL: str
+    
+    # External services data
+    MYFXBOOK_LOGIN: str
+    MYFXBOOK_PASSWORD: str
     
     class Config:
         env_file = f'{BASE_DIR}/.env'
-    
-    

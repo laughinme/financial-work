@@ -1,2 +1,3 @@
+from .redis_client import get_redis
 from .session_interface import SessionRepo
-from .redis_client import get_redis, get_redis_manually
+from .cache_interface import CacheRepo
