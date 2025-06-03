@@ -20,3 +20,6 @@ class User(TimestampMixin, Base):
     providers: Mapped[list["AuthProvider"]] = relationship( # type: ignore
         back_populates="user", cascade="all, delete-orphan"
     )
+    holdings = relationship("Holding", back_populates="user", lazy="selectin")
+    unit_issues = relationship("UnitIssue", back_populates="user")
+    transactions = relationship("Transaction", back_populates="user")

@@ -23,7 +23,7 @@ from ..session import SessionService
 config = Config()
 
 
-class CredentialsService():
+class CredentialsService:
     def __init__(
         self,
         creds_repo: CredentialsInterface,
