@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, Request
 
 from core.config import Config
-from service import UserService, get_user_service
-from domain.users import UserLogin
-from ..schemas import UserSchema
+from service.auth import CredentialsService, get_credentials_service
+from domain.users import UserLogin, UserSchema
 
 config = Config()
 router = APIRouter()
@@ -16,10 +15,7 @@ router = APIRouter()
 async def login_user(
     request: Request,
     payload: UserLogin,
-    user_service: UserService = Depends(get_user_service)
+    creds_service: CredentialsService = Depends(get_credentials_service)
 ) -> UserSchema:
-    user = await user_service.login(request, payload, config.SESSION_LIFETIME)
+    user = await creds_service.login(request, payload, config.SESSION_LIFETIME)
     return user
-
-
-

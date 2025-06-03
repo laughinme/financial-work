@@ -6,6 +6,7 @@ from starlette.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 
 from api import get_api_routers
+from webhooks import get_webhooks
 from service import SessionService
 from core.config import Config
 from core.middlewares import RefreshTTLMiddleware
@@ -31,6 +32,7 @@ app = FastAPI(
 
 # Including routers
 app.include_router(get_api_routers())
+app.include_router(get_webhooks())
 
 # Adding middlewares
 app.add_middleware(
