@@ -17,7 +17,7 @@ class PortfolioInterface:
         
     # helpers
     @staticmethod
-    def _portfolio_row(p_id: int, acc: AccountSchema, nav_price: Decimal) -> dict:
+    def _portfolio_row(portfolio_id: int, acc: AccountSchema, nav_price: Decimal) -> dict:
         p_dict = dict(
             oid_myfx = acc.id,
             account_number = acc.account_id,
@@ -34,8 +34,8 @@ class PortfolioInterface:
             first_trade_at = acc.first_trade_date,
             last_sync = datetime.now(UTC)
         )
-        if p_id:
-            p_dict['id'] = p_id
+        if portfolio_id:
+            p_dict['id'] = portfolio_id
             
         return p_dict
     
@@ -129,16 +129,19 @@ class PortfolioInterface:
         if not rows:
             return
         query = insert(PortfolioSnapshot).values(rows)
-        query = query.on_conflict_do_update(
-            index_elements=["portfolio_id", "snapshot_date"],
-            set_= {
-                "nav_price": query.excluded.nav_price,
-                "balance": query.excluded.balance,
-                "equity": query.excluded.equity,
-                "drawdown": query.excluded.drawdown,
-                "updated_at": datetime.now(UTC)
-            }
+        query = query.on_conflict_do_nothing(
+            index_elements=["portfolio_id", "snapshot_date"]
         )
+        # query = query.on_conflict_do_update(
+        #     index_elements=["portfolio_id", "snapshot_date"],
+        #     set_= {
+        #         "nav_price": query.excluded.nav_price,
+        #         "balance": query.excluded.balance,
+        #         "equity": query.excluded.equity,
+        #         "drawdown": query.excluded.drawdown,
+        #         "updated_at": datetime.now(UTC)
+        #     }
+        # )
         await self.session.execute(query)
 
     

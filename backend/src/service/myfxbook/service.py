@@ -35,13 +35,15 @@ class MyFXService:
         if session := await self.cache_repo.get('myfx:session'):
             return session
         
-        # response = await self._call('/login.json', params={
-        #     'email': config.MYFXBOOK_LOGIN,
-        #     'password': config.MYFXBOOK_PASSWORD
-        # }, with_retry=False)
-        # session = response['session']
-        
-        session = 'CfhiNHFkrfLr1ZooPHO44148929'
+        try:
+            response = await self._call('/login.json', params={
+                'email': config.MYFXBOOK_LOGIN,
+                'password': config.MYFXBOOK_PASSWORD
+            }, with_retry=False)
+            session = response['session']
+            
+        except MyFXError:
+            session = 'CfhiNHFkrfLr1ZooPHO44148929'
         
         await self.cache_repo.set('myfx:session', session, ttl=3600*24)
         
