@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
+from decimal import Decimal
 
 from .common import CommonModel
 
@@ -13,28 +14,28 @@ class AccountSchema(BaseModel):
     name: str
     description: str | None = Field(None)
     account_id: int = Field(..., alias='accountId')
-    gain: float
-    abs_gain: float = Field(..., alias='absGain')
-    daily: float
-    monthly: float
+    gain: Decimal
+    abs_gain: Decimal = Field(..., alias='absGain')
+    daily: Decimal
+    monthly: Decimal
     withdrawals: int
-    deposits: float
-    interest: float
-    profit: float
-    balance: float
-    drawdown: float
-    equity: float
-    equity_percent: float = Field(..., alias='equityPercent')
+    deposits: Decimal
+    interest: Decimal
+    profit: Decimal
+    balance: Decimal
+    drawdown: Decimal
+    equity: Decimal
+    equity_percent: Decimal = Field(..., alias='equityPercent')
     demo: bool
     last_update_date: datetime = Field(..., alias='lastUpdateDate')
     creation_date: datetime = Field(..., alias='creationDate')
     first_trade_date: datetime = Field(..., alias='firstTradeDate')
-    tracking: float
-    views: float
-    commission: float
+    tracking: Decimal
+    views: Decimal
+    commission: Decimal
     currency: str
-    profit_factor: float = Field(..., alias='profitFactor')
-    pips: float
+    profit_factor: Decimal = Field(..., alias='profitFactor')
+    pips: Decimal
     portfolio: str
     invitation_url: str = Field(..., alias='invitationUrl')
     server: ServerSchema

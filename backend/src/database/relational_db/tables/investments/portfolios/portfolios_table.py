@@ -12,7 +12,7 @@ class Portfolio(TimestampMixin, Base):
     __tablename__ = "portfolios"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    oid_myfx: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    oid_myfx: Mapped[int] = mapped_column(Integer, nullable=False, index=True, unique=True)
     account_number: Mapped[int] = mapped_column(Integer, nullable=False)
     
     name: Mapped[str] = mapped_column(String, nullable=False)
@@ -22,8 +22,8 @@ class Portfolio(TimestampMixin, Base):
     
     risk: Mapped[RiskScale] = mapped_column(Enum(RiskScale), nullable=True)
     
-    units_total: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False, default=0)
-    nav_price: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False)
+    units_total: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False, default=Decimal('0'))
+    nav_price: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False, default=Decimal('1'))
     balance: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
     equity: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
     drawdown: Mapped[Decimal] = mapped_column(DECIMAL(6, 3), nullable=False) # in percent

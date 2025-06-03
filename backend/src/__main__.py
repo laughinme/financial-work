@@ -23,12 +23,14 @@ async def lifespan(app: FastAPI):
     app.state.session_service = SessionService(SessionRepo(redis))
     
     # Start APScheduler
-    init_scheduler()
+    scheduler = init_scheduler()
+    app.state.scheduler = scheduler
     
     try:
         yield
     finally:
-        await redis.close()
+        scheduler.shutdown(wait=False)
+        await redis.aclose()
 
 
 app = FastAPI(

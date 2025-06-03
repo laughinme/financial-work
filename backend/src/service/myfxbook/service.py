@@ -17,8 +17,6 @@ from .exceptions import MyFXError
 
 
 config = Config()
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class MyFXService:
@@ -37,11 +35,13 @@ class MyFXService:
         if session := await self.cache_repo.get('myfx:session'):
             return session
         
-        response = await self._call('/login.json', params={
-            'email': config.MYFXBOOK_LOGIN,
-            'password': config.MYFXBOOK_PASSWORD
-        }, with_retry=False)
-        session = response['session']
+        # response = await self._call('/login.json', params={
+        #     'email': config.MYFXBOOK_LOGIN,
+        #     'password': config.MYFXBOOK_PASSWORD
+        # }, with_retry=False)
+        # session = response['session']
+        
+        session = 'CfhiNHFkrfLr1ZooPHO44148929'
         
         await self.cache_repo.set('myfx:session', session, ttl=3600*24)
         
@@ -72,7 +72,7 @@ class MyFXService:
 
     async def logout(self) -> None:
         session = await self._get_session()
-        await self._call('/logout.json', params={'session': session})        
+        await self._call('/logout.json', params={'session': session})
         
         await self.cache_repo.delete('myfx:session')
 
@@ -80,58 +80,62 @@ class MyFXService:
     async def get_accounts(self) -> AccountsSchema:
         cache_key = "myfx:accounts"
         if raw := await self.cache_repo.get(cache_key):
-            return AccountsSchema.model_validate(raw)
+            return AccountsSchema.model_validate_json(raw)
         
         session = await self._get_session()
-        response = await self._call('/get-my-accounts.json', params={'session': session})
-        await self.cache_repo.set(cache_key, response, ttl=15*60)
+        data = await self._call('/get-my-accounts.json', params={'session': session})
+        await self.cache_repo.set(cache_key, json.dumps(data), ttl=15*60)
         
-        return AccountsSchema.model_validate(response)
+        return AccountsSchema.model_validate(data)
 
 
     async def get_data_daily(
-        self, account_id: str, start: date, end: date,
+        self, account_id: int, start: date, end: date,
     ) -> DataDailySchema:
         cache_key = f"myfx:data_daily:{account_id}:{start}:{end}"
         if (raw := await self.cache_repo.get(cache_key)):
-            return DataDailySchema.model_validate(raw)
+            return DataDailySchema.model_validate_json(raw)
         
         session = await self._get_session()
         data = await self._call(
             '/get-data-daily.json',
             params={'session': session, 'id': account_id, 'start': start, 'end': end}
         )
-        
         await self.cache_repo.set(cache_key, json.dumps(data), ttl=60*60)
+        
         return DataDailySchema.model_validate(data)
     
     
     async def bulk_data_daily(
-        self, *account_ids: str, start: date, end: date
-    ) -> list[DataDailySchema]:
-        tasks = [self.get_data_daily(account_id, start, end) for account_id in account_ids]
-        return await asyncio.gather(*tasks)
+        self, *account_ids: int, start: date, end: date
+    ) -> dict[int, DataDailySchema]:
+        async def fetch(oid: int):
+            return oid, await self.get_data_daily(oid, start, end)
+        pairs = await asyncio.gather(*(fetch(i) for i in account_ids))
+        return dict(pairs)
 
-
+    
     async def get_daily_gain(
-        self, account_id: str, start: date, end: date,
+        self, account_id: int, start: date, end: date,
     ) -> DailyGainSchema:
         cache_key = f'myfx:daily_gain:{account_id}:{start}:{end}'
         if raw := await self.cache_repo.get(cache_key):
-            return DailyGainSchema.model_validate(raw)
+            return DailyGainSchema.model_validate_json(raw)
             
         session = await self._get_session()
         data = await self._call(
             '/get-daily-gain.json',
             params={'session': session, 'id': account_id, 'start': start, 'end': end}
         )
-        
         await self.cache_repo.set(cache_key, json.dumps(data), ttl=15*60)
+        
         return DailyGainSchema.model_validate(data)
     
 
     async def bulk_daily_gain(
-        self, *account_ids: str, start: date, end: date
-    ) -> list[DataDailySchema]:
-        tasks = [self.get_daily_gain(account_id, start, end) for account_id in account_ids]
-        return await asyncio.gather(*tasks)
+        self, *account_ids: int, start: date, end: date
+    ) -> dict[int, DailyGainSchema]:
+        async def fetch(oid: int):
+            return oid, await self.get_daily_gain(oid, start, end)
+        pairs = await asyncio.gather(*(fetch(i) for i in account_ids))
+        return dict(pairs)

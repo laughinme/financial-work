@@ -1,7 +1,7 @@
 from decimal import Decimal
 from datetime import date
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import Integer, ForeignKey, DECIMAL, Date, PrimaryKeyConstraint
+from sqlalchemy import Integer, ForeignKey, DECIMAL, Date, PrimaryKeyConstraint, Index
 
 from ...table_base import Base
 from ...mixins import TimestampMixin
@@ -18,9 +18,13 @@ class PortfolioSnapshot(TimestampMixin, Base):
     )
     
     nav_price: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False)
-    equity: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
-    drawdown: Mapped[Decimal] = mapped_column(DECIMAL(6, 3), nullable=False)
-
+    balance = mapped_column(DECIMAL(24,2), nullable=False)
+    equity = mapped_column(DECIMAL(24,2), nullable=False)
+    drawdown = mapped_column(DECIMAL(6,3), nullable=False)   # %
+    
     __table_args__ = (
         PrimaryKeyConstraint('portfolio_id', 'snapshot_date', name='pk_portfolio_snapshot'),
+        Index('ix_snap_portfolio_date', 'portfolio_id', 'snapshot_date'),
     )
+    
+    portfolio = relationship("Portfolio", back_populates="snapshots")

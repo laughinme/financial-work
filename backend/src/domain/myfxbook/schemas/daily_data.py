@@ -1,18 +1,19 @@
 from pydantic import BaseModel, Field, field_validator
 from datetime import date, datetime
+from decimal import Decimal
 
 from .common import CommonModel
 
 
 class DayData(BaseModel):
     date: date
-    balance: float
-    pips: float
-    lots: float
-    floating_PL: float = Field(..., alias='floatingPL')
-    profit: float
-    growth_equity: float = Field(..., alias='growthEquity')
-    floating_pips: float = Field(..., alias='floatingPips')
+    balance: Decimal
+    pips: Decimal
+    lots: Decimal
+    floating_PL: Decimal = Field(..., alias='floatingPL')
+    profit: Decimal
+    growth_equity: Decimal = Field(..., alias='growthEquity')
+    floating_pips: Decimal = Field(..., alias='floatingPips')
     
     
     @field_validator('date', mode='before')
@@ -22,4 +23,11 @@ class DayData(BaseModel):
 
 
 class DataDailySchema(CommonModel):
-    data_daily: list[list[DayData]] = Field(..., alias='dataDaily')
+    data_daily: list[DayData] = Field(..., alias='dataDaily')
+    
+    @field_validator('data_daily', mode='before')
+    @classmethod
+    def remove_extra_nest(cls, v: list):
+        if v == []:
+            return v
+        return [day[-1] for day in v]
