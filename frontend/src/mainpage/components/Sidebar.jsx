@@ -8,7 +8,6 @@ const nav = [
   { to: '/portfolio',  icon: FiPackage },
   { to: '/analytics',  icon: FiBarChart2 },
   { to: '/messages',   icon: FiMessageSquare },
-  { to: '/notification', icon: FiBell },
   { to: '/settings',   icon: FiSettings },
 ];
 
