@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('balance', sa.DECIMAL(precision=18, scale=2), nullable=False),
     sa.Column('locked', sa.DECIMAL(precision=18, scale=2), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='RESTRICT'),
-    sa.PrimaryKeyConstraint('user_id', 'currency', name='pk_userid_currency')
+    sa.PrimaryKeyConstraint('user_id', 'currency', name='pk_wallets')
     )
     # ### end Alembic commands ###
 

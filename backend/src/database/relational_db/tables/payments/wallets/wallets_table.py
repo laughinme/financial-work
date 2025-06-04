@@ -20,7 +20,7 @@ class Wallet(Base):
     locked: Mapped[Decimal] = mapped_column(DECIMAL(18,2), default=Decimal('0'), nullable=False)
     
     __table_args__ = (
-        PrimaryKeyConstraint('user_id', 'currency', name='pk_userid_currency'),
+        PrimaryKeyConstraint('user_id', 'currency', name='pk_wallets'),
     )
 
     user = relationship('User', back_populates='wallets')

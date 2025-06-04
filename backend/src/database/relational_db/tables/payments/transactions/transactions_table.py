@@ -16,8 +16,8 @@ class Transaction(TimestampMixin, Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
-    intent_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey('payment_intents.id', ondelete='RESTRICT'), nullable=True
+    intent_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey('payment_intents.id', ondelete='RESTRICT'), nullable=True
     )
     portfolio_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('portfolios.id', ondelete='RESTRICT'), nullable=True

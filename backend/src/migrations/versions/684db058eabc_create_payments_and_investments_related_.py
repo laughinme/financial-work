@@ -59,9 +59,9 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('portfolio_id', 'user_id', name='pk_portfolio_user')
     )
     op.create_table('payment_intents',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
-    sa.Column('provider_payment_id', sa.String(), nullable=False),
+    sa.Column('provider_payment_id', sa.String(), nullable=True),
     sa.Column('amount', sa.DECIMAL(precision=24, scale=8), nullable=False),
     sa.Column('currency', sa.CHAR(length=3), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'SUCCEEDED', 'FAILED', name='paymentstatus'), nullable=False),
@@ -88,7 +88,7 @@ def upgrade() -> None:
     op.create_table('transactions',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
-    sa.Column('intent_id', sa.Integer(), nullable=True),
+    sa.Column('intent_id', sa.UUID(), nullable=True),
     sa.Column('portfolio_id', sa.Integer(), nullable=True),
     sa.Column('type', sa.Enum('DEPOSIT', 'WITHDRAW', 'FEE', 'PNL', 'PAYBACK', name='transactiontype'), nullable=False),
     sa.Column('amount', sa.DECIMAL(precision=24, scale=8), nullable=False),

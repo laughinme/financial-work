@@ -8,8 +8,7 @@ from service.payments import YooKassaService
 router = APIRouter()
 
 @router.post(
-    path="/payout",
+    path="/withdraw",
 )
-async def payout_route(payload: CreatePayoutSchema):
+async def request_withdrawal(payload: CreatePayoutSchema):
     return await YooKassaService.payout(payload)
-    
