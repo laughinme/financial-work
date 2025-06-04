@@ -2,8 +2,10 @@ from enum import Enum
 
 
 class TransactionType(Enum):
-    DEPOSIT = 'deposit'
-    WITHDRAW = 'withdraw'
-    FEE = 'fee'
-    PNL = 'pnl'
-    PAYBACK = 'payback'
+    DEPOSIT          = "deposit"           # external deposit
+    WITHDRAW_PENDING = 'withdraw_pending'  # freeze
+    WITHDRAW         = "withdraw"          # external withdraw
+    INVEST           = "invest"            # wallet → portfolio
+    PAYBACK          = "payback"           # portfolio → wallet (withdraw)
+    FEE              = "fee"               # success-fee
+    PNL              = "pnl"               # revaluation +/-

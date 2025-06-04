@@ -3,7 +3,7 @@ import logging
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
-from database.relational_db import get_uow_manually, PortfolioInterface
+from database.relational_db import get_uow_manually, PortfolioInterface, GainsInterface, HoldingsInterface
 from database.redis import get_redis, CacheRepo
 from service.myfxbook import MyFXService
 from domain.myfxbook import DayData
@@ -25,6 +25,8 @@ async def myfx_job():
         cache_repo = CacheRepo(get_redis())
         service = MyFXService(uow, cache_repo, client)
         p_repo = PortfolioInterface(uow.session)
+        g_repo = GainsInterface(uow.session)
+        h_repo = HoldingsInterface(uow.session)
         
         # Parsing data and updating database
         today = date.today()
@@ -51,7 +53,7 @@ async def myfx_job():
                         p_repo._snapshot_row(p.id, day.date, Decimal('1'), day.balance, current_equity, drawdown)
                     )
                     
-                gain_rows.extend(p_repo._gain_row(p.id, gain) for gain in daily_gain)
+                gain_rows.extend(g_repo._gain_row(p.id, gain) for gain in daily_gain)
                 
             
         start = today - timedelta(days=30)
@@ -76,12 +78,12 @@ async def myfx_job():
                     p_repo._snapshot_row(p.id, today, nav_price, acc.balance, acc.equity, drawdown)
                 )
                 
-            gain_rows.extend(p_repo._gain_row(p.id, g) for g in gain)
+            gain_rows.extend(g_repo._gain_row(p.id, g) for g in gain)
             
         await p_repo.bulk_upsert(update_rows)
         await p_repo.bulk_upsert_snapshots(snapshot_rows)
-        await p_repo.bulk_upsert_gains(gain_rows)
-        await p_repo.revalue_holdings()
+        await g_repo.bulk_upsert_gains(gain_rows)
+        await h_repo.revalue_holdings()
         
         logger.info(
             "MyFX sync completed: %s new / %s updates / %s snapshots / %s gains",

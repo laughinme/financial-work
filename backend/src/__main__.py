@@ -35,7 +35,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    title='Finance'
+    title='Finance',
+    debug=True
 )
 
 # Including routers

@@ -23,3 +23,4 @@ class User(TimestampMixin, Base):
     holdings = relationship("Holding", back_populates="user", lazy="selectin")
     unit_issues = relationship("UnitIssue", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")
+    wallets = relationship('Wallet', back_populates='user')
