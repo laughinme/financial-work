@@ -5,7 +5,7 @@ from database.redis import SessionRepo
 from fastapi import Request
 
 
-class SessionService():
+class SessionService:
     def __init__(self, repo: SessionRepo):
         self.repo = repo
 

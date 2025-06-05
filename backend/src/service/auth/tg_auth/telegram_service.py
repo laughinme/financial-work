@@ -22,7 +22,7 @@ from ..session import SessionService
 config = Config()
 
 
-class TelegramService():
+class TelegramService:
     def __init__(
         self,
         tg_repo: TelegramInterface,

@@ -27,3 +27,12 @@ async def get_uow() -> AsyncGenerator[UoW, None]:
     async with async_session() as session:
         async with UoW(session) as uow:
             yield uow
+            
+
+@asynccontextmanager
+async def get_uow_manually() -> AsyncGenerator[UoW, None]:
+    """UoW generator that can be used outside of Depends"""
+    async with async_session() as session:
+        async with UoW(session) as uow:
+            yield uow
+            
