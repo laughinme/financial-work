@@ -40,6 +40,7 @@ class Portfolio(TimestampMixin, Base):
     last_sync: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=datetime.now(UTC)
     )
+    last_update_myfx: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     
     # active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     

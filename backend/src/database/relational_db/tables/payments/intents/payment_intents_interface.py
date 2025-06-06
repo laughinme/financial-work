@@ -13,6 +13,10 @@ class PaymentIntentInterface:
     
     async def add(self, intent: PaymentIntent) -> None:
         self.session.add(intent)
+        
+        
+    async def get(self, intent_id: UUID) -> PaymentIntent:
+        return await self.session.get(PaymentIntent, intent_id)
 
 
     async def update_status(self, intent_id: UUID, status: PaymentStatus) -> None:

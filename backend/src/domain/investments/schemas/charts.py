@@ -24,15 +24,3 @@ class PortfolioCharts(BaseModel):
     sparkline: list[SparklineGain]
     balance_equity: list[BalanceEquity]
     drawdown: list[Drawdown]
-    
-
-# class PortfolioCharts(BaseModel):
-#     sparkline: list[tuple[date, Decimal]] = Field(
-#         [], description='Data for sparkline gain: [date, gain %]'
-#     )
-#     balance_equity: list[tuple[date, Decimal, Decimal]] = Field(
-#         [], description='Data for balance_equity chart: [date, balance, equity]'
-#     )
-#     drawdown: list[tuple[date, Decimal]] = Field(
-#         [], description='Data for drawdown chart: [date, drawdown %]'
-#     )

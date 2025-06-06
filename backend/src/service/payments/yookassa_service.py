@@ -12,10 +12,10 @@ from database.relational_db import (
     PaymentIntentInterface,
     Transaction,
     TransactionInterface, 
-    Wallet, 
     WalletInterface
 )
 from domain.payments import PaymentStatus, PaymentProvider, CreatePaymentSchema, TransactionType, DepositAction
+from service.investments import InvestmentService
 from core.config import Config
 from .exceptions import PaymentFailed, UnsupportedEvent
 
@@ -34,9 +34,11 @@ class YooKassaService:
         uow: UoW,
         intent_repo: PaymentIntentInterface,
         t_repo: TransactionInterface,
-        w_repo: WalletInterface
+        w_repo: WalletInterface,
+        invest_service: InvestmentService
     ):
         self.uow, self.intent_repo, self.t_repo, self.w_repo = uow, intent_repo, t_repo, w_repo
+        self.invest_service = invest_service
 
 
     async def create_payment(self, payload: CreatePaymentSchema, user: User):
@@ -127,14 +129,19 @@ class YooKassaService:
         event = notification_object.event
         payment = notification_object.object
         metadata: dict[str, str] = payment.metadata
+        intent_id, user_id = metadata['intent_id'], metadata['user_id']
+        
+        intent = await self.intent_repo.get(intent_id)
+        if intent.status == PaymentStatus.SUCCEEDED:
+            logger.info("Duplicate webhook, ignoring")
+            return
 
         match event:
             case 'payment.succeeded':
                 payment_id = payment.id
                 amount = payment.amount.value
-                currency = payment.amount.currency
+                currency = payment.amount.currency.upper()
                 description = payment.description
-                intent_id, user_id = metadata['intent_id'], metadata['user_id']
                 
                 await self.intent_repo.update_status(intent_id, PaymentStatus.SUCCEEDED)
                 
@@ -148,19 +155,18 @@ class YooKassaService:
                     currency=currency,
                     comment=description
                 )
-                
                 await self.t_repo.add(transaction)
                 
-                # match metadata['action']:
-                #     case DepositAction.INVEST:
-                #         await self.t_repo.add()
-                        
+                await self.uow.session.commit()
+                
+                match metadata['action']:
+                    case DepositAction.INVEST.value:
+                        portfolio_id = int(metadata.get('action_id'))
+                        await self.invest_service.invest(portfolio_id, amount, user_id)
                 
                 logger.info(f"Payment {payment_id} for the amount {amount} {currency} has been successfully completed.")
                 
             case 'payment.failed':
-                intent_id, user_id = metadata['intent_id'], metadata['user_id']
-                
                 await self.intent_repo.update_status(intent_id, PaymentStatus.FAILED)
                 
                 logger.warning(f"Payment failed: {event}")

@@ -32,7 +32,8 @@ class PortfolioInterface:
             gain_percent = acc.gain,
             net_profit = acc.profit,
             first_trade_at = acc.first_trade_date,
-            last_sync = datetime.now(UTC)
+            last_sync = datetime.now(UTC),
+            last_update_myfx = acc.last_update_date
         )
         if portfolio_id:
             p_dict['id'] = portfolio_id
@@ -85,6 +86,10 @@ class PortfolioInterface:
     ) -> Portfolio | None:
         portfolio = await self.session.get(Portfolio, portfolio_id)
         return portfolio
+    
+    
+    async def get_isolated(self, portfolio_id) -> Portfolio | None:
+        return await self.session.get(Portfolio, portfolio_id, with_for_update=True)
     
     
     async def list_all(self, size: int = 0, page: int = 0) -> list[Portfolio]:

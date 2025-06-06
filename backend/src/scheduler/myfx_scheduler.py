@@ -6,6 +6,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from database.relational_db import get_uow_manually, PortfolioInterface, GainsInterface, HoldingsInterface
 from database.redis import get_redis, CacheRepo
 from service.myfxbook import MyFXService
+from service.investments import InvestmentService, get_investment_service
 from domain.myfxbook import DayData
 
 
@@ -24,6 +25,7 @@ async def myfx_job():
     async with get_uow_manually() as uow, httpx.AsyncClient(timeout=15) as client:
         cache_repo = CacheRepo(get_redis())
         service = MyFXService(uow, cache_repo, client)
+        invest_service: InvestmentService = await get_investment_service(uow)
         p_repo = PortfolioInterface(uow.session)
         g_repo = GainsInterface(uow.session)
         h_repo = HoldingsInterface(uow.session)
@@ -59,19 +61,23 @@ async def myfx_job():
         start = today - timedelta(days=30)
         daily_data = await service.bulk_data_daily(*accounts.keys(), start=start, end=today)
         daily_gain = await service.bulk_daily_gain(*accounts.keys(), start=start, end=today)
+        updated_p_ids = set()
 
         for p in portfolios:
-            hist = daily_data.get(p.oid_myfx).data_daily
             acc = accounts.get(p.oid_myfx)
+            hist = daily_data.get(p.oid_myfx).data_daily
             gain = daily_gain.get(p.oid_myfx).daily_gain
             
-            if p.units_total == 0:
-                nav_price = Decimal('1') 
-            else:
-                nav_price = (acc.equity / p.units_total).quantize(Decimal('0.00000001'))
+            if p.last_update_myfx < acc.last_update_date:
+                updated_p_ids.add(p.id)
             
-            update_rows.append(p_repo._portfolio_row(p.id, acc, nav_price))
-            
+                if p.units_total == 0:
+                    nav_price = Decimal('1') 
+                else:
+                    nav_price = (acc.equity / p.units_total).quantize(Decimal('0.00000001'))
+                
+                update_rows.append(p_repo._portfolio_row(p.id, acc, nav_price))
+                
             if hist and hist[-1].date == today:
                 drawdown = calculate_drawdown(hist, acc.equity)
                 snapshot_rows.append(
@@ -83,9 +89,12 @@ async def myfx_job():
         await p_repo.bulk_upsert(update_rows)
         await p_repo.bulk_upsert_snapshots(snapshot_rows)
         await g_repo.bulk_upsert_gains(gain_rows)
-        await h_repo.revalue_holdings()
         
+        if updated_p_ids:
+            await invest_service.update_batch(updated_p_ids)
+            await h_repo.revalue_holdings()
+
         logger.info(
-            "MyFX sync completed: %s new / %s updates / %s snapshots / %s gains",
-            len(new_oids), len(update_rows), len(snapshot_rows), len(gain_rows)
+            "MyFX sync completed: %s new / %s updates / %s snapshots / %s gains\nUpdated ids: %s",
+            len(new_oids), len(update_rows), len(snapshot_rows), len(gain_rows), updated_p_ids
         )

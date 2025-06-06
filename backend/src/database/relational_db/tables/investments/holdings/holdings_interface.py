@@ -1,4 +1,5 @@
 from decimal import Decimal
+from uuid import UUID
 from datetime import  datetime, UTC, date
 from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +20,7 @@ class HoldingsInterface:
         rows = await self.session.execute(
             select(Holding, Portfolio.nav_price)
             .join(Portfolio, Holding.portfolio_id == Portfolio.id)
+            .with_for_update(skip_locked=True)
         )
         
         tx_batch = []
@@ -75,3 +77,14 @@ class HoldingsInterface:
         holders, deposit = row
         
         return holders, deposit
+    
+    
+    async def issue_units(self, user_id: UUID, units: Decimal, deposit: Decimal):
+        await self.session.execute(
+            update(Holding)
+            .where(Holding.user_id == user_id)
+            .values(
+                units = Holding.units + units,
+                total_deposit = Holding.total_deposit + deposit,
+            )
+        )

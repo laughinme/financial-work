@@ -11,11 +11,7 @@ class WalletInterface:
     def __init__(self, session: AsyncSession):
         self.session = session
         
-        
-    # async def add(self, wallet: Wallet) -> None:
-    #     self.session.add(wallet)
-        
-        
+    
     async def credit(
         self,
         user_id: UUID,
@@ -59,8 +55,8 @@ class WalletInterface:
         """
         Debit: subtract amount > 0
         """
-        if amount > 0:
-            raise ValueError('Amount cant be greater than zero')
+        if amount < 0:
+            raise ValueError('Amount cant be less than zero')
         
         query = (
             update(Wallet)
@@ -86,7 +82,7 @@ class WalletInterface:
         amount: Decimal
     ) -> Wallet | None:
         """
-        Withdrawal request
+        Balance - amount; locked + amount
         """
         query = (
             update(Wallet)
@@ -99,9 +95,8 @@ class WalletInterface:
                 balance = Wallet.balance - amount,
                 locked = Wallet.locked + amount
             )
-            .returning(Wallet.balance, Wallet.locked)
+            .returning(Wallet)
         )
-
         result = await self.session.execute(query)
         
         return result.scalar()
