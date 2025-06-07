@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
-import './Reg.css';
+import React, { useState, useEffect } from "react";
+import { FiEye, FiEyeOff } from "react-icons/fi";
+import "./reg.css";
 
 function Reg({ onSwitch }) {
   const [email, setEmail]       = useState('');

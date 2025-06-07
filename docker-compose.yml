@@ -1,0 +1,74 @@
+services:
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        container_name: backend
+        env_file:
+            - ./backend/.env
+        environment:
+            - DB_HOST=db
+            - DB_PORT=5432
+            - REDIS_HOST=redis
+        ports:
+            - "8000:8000"
+        depends_on:
+            - db
+            - redis
+        networks:
+            - web
+
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+        container_name: frontend
+        environment:
+            - VITE_API_URL=http://backend:8000
+        ports:
+            - "5173:4173"
+        depends_on:
+            - backend
+        networks:
+            - web
+
+    redis:
+        image: redis:latest
+        container_name: redis_service
+        ports:
+            - "6380:6379"
+        volumes:
+            - redis_data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - web
+
+    db:
+        image: postgres:latest
+        environment:
+            POSTGRES_USER: "postgres"
+            POSTGRES_PASSWORD: "postgres"
+            POSTGRES_DB: "financial"
+        ports:
+            - "5433:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - web
+
+networks:
+    web:
+        driver: bridge
+
+volumes:
+    postgres_data:
+    redis_data:
