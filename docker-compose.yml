@@ -13,10 +13,17 @@ services:
         ports:
             - "8000:8000"
         depends_on:
-            - db
-            - redis
+            db:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
         networks:
             - web
+        # healthcheck:
+        #     test: ["CMD", "curl", "-f", "http://backend:8000/ping"]
+        #     interval: 10s
+        #     timeout: 5s
+        #     retries: 5
 
     frontend:
         build:
@@ -27,8 +34,9 @@ services:
             - VITE_API_URL=http://backend:8000
         ports:
             - "5173:4173"
-        depends_on:
-            - backend
+        # depends_on:
+        #     backend:
+        #         condition: service_healthy
         networks:
             - web
 
@@ -41,8 +49,8 @@ services:
             - redis_data:/data
         healthcheck:
             test: ["CMD", "redis-cli", "ping"]
-            interval: 10s
-            timeout: 5s
+            interval: 5s
+            timeout: 3s
             retries: 5
         networks:
             - web
@@ -59,8 +67,8 @@ services:
             - postgres_data:/var/lib/postgresql/data
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U postgres"]
-            interval: 10s
-            timeout: 5s
+            interval: 5s
+            timeout: 3s
             retries: 5
         networks:
             - web

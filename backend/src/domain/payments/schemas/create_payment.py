@@ -7,7 +7,9 @@ from ..enums import DepositAction
 
 class CreatePaymentSchema(BaseModel):
     amount: Decimal = Field(..., description='Required payment amount in double format (100.00)')
-    currency: str = Field(..., description='Currency in ISO 4217 format (RUB, USD, EUR, etc.)')
+    currency: str = Field(
+        'USD', description='Only USD is allowed'
+    )
     description: str | None = Field(
         None, description='For example: “Payment for order #72 for user@example.com”.'
     )
@@ -25,4 +27,6 @@ class CreatePaymentSchema(BaseModel):
     def check_action(self) -> Self:
         if self.action != DepositAction.DEPOSIT and self.action_id is None:
             raise ValueError(f'Action mode {self.action} requires action_id field to be passed')
+        if self.currency != 'USD':
+            raise ValueError('Only USD is allowed')
         return self

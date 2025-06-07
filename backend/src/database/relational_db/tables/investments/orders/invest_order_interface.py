@@ -31,3 +31,14 @@ class InvestOrderInterface:
         )
         
         return orders.all()
+
+
+    async def list(self, status: InvestOrderStatus) -> list[InvestOrder]:
+        orders = await self.session.scalars(
+            select(InvestOrder)
+            .where(InvestOrder.status == status)
+            # .order_by(InvestOrder.created_at)
+            .with_for_update(skip_locked=True)
+        )
+        
+        return orders.all()

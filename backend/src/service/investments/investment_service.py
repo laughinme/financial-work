@@ -45,19 +45,21 @@ class InvestmentService:
         self,
         portfolio_id: int,
         amount: Decimal,
+        currency: str,
         user_id: UUID
     ) -> None:
         portfolio = await self.p_repo.get_by_id(portfolio_id)
         if portfolio is None:
             raise PortfolioNotFound()
         
-        currency = portfolio.currency
+        p_currency = portfolio.currency
         
         order = InvestOrder(
             user_id=user_id,
             portfolio_id=portfolio_id,
-            amount=amount,
-            currency=currency,
+            init_amount=amount,
+            init_currency=currency,
+            currency=p_currency,
             status=InvestOrderStatus.PENDING
         )
         await self.io_repo.add(order)
@@ -67,6 +69,11 @@ class InvestmentService:
             raise PaymentRequired()
         
         # TODO: add transaction with status INVEST_PENDING
+        
+        
+    async def convert_to_usd(self):
+        ready_total_usd = Decimal("0")
+        
 
 
     async def update_batch(self, portfolio_ids: set[int]):

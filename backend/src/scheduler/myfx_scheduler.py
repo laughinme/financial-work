@@ -69,7 +69,8 @@ async def myfx_job():
             gain = daily_gain.get(p.oid_myfx).daily_gain
             
             if p.last_update_myfx < acc.last_update_date:
-                updated_p_ids.add(p.id)
+                if p.deposits != acc.deposits:
+                    updated_p_ids.add(p.id)
             
                 if p.units_total == 0:
                     nav_price = Decimal('1') 

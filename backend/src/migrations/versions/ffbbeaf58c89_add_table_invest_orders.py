@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('portfolio_id', sa.Integer(), nullable=False),
     sa.Column('amount', sa.DECIMAL(precision=24, scale=8), nullable=False),
     sa.Column('currency', sa.CHAR(length=3), nullable=False),
-    sa.Column('status', sa.Enum('PENDING', 'EXECUTED', 'FAILED', name='investorderstatus'), nullable=False),
+    sa.Column('status', sa.Enum('PENDING', 'ACCEPTED', 'EXECUTED', 'FAILED', name='investorderstatus'), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['portfolio_id'], ['portfolios.id'], ondelete='RESTRICT'),

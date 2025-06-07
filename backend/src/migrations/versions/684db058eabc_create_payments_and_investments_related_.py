@@ -65,7 +65,7 @@ def upgrade() -> None:
     sa.Column('amount', sa.DECIMAL(precision=24, scale=8), nullable=False),
     sa.Column('currency', sa.CHAR(length=3), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'SUCCEEDED', 'FAILED', name='paymentstatus'), nullable=False),
-    sa.Column('provider', sa.Enum('YOOKASSA', 'CRYPTO', 'YANDEX', 'TINKOFF', 'ROBOKASSA', 'PAYANYWAY', name='paymentprovider'), nullable=False),
+    sa.Column('provider', sa.Enum('YOOKASSA', 'STRIPE', 'CRYPTO', 'YANDEX', 'TINKOFF', 'ROBOKASSA', 'PAYANYWAY', name='paymentprovider'), nullable=False),
     sa.Column('_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
