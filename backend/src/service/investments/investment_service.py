@@ -120,3 +120,11 @@ class InvestmentService:
         holding = await self.h_repo.user_portfolio_holding(user_id, p_id)
         
         return holding
+    
+    
+    async def user_summary(
+        self,
+        user_id: UUID
+    ):
+        result = await self.h_repo.user_summary(user_id)
+        return result

@@ -1,13 +1,14 @@
 from decimal import Decimal
 from uuid import UUID
-from datetime import  datetime, UTC, date
+from datetime import timedelta, date
 from sqlalchemy import select, update, func
+from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.dialects.postgresql import insert, array_agg
+from sqlalchemy.dialects.postgresql import array_agg
 
 from domain.payments import TransactionType
 from .user_holdings_table import Holding
-from ..portfolios import Portfolio
+from ..portfolios import Portfolio, PortfolioSnapshot
 from ...payments import Transaction
 
 
@@ -112,3 +113,42 @@ class HoldingsInterface:
         holding = await self.session.scalar(query)
         
         return holding
+
+    
+    async def user_summary(
+        self,
+        user_id: UUID
+    ) -> dict[str, Decimal | int]:
+        Snapshot = aliased(PortfolioSnapshot)
+        yesterday = date.today() - timedelta(days=1)
+
+        pnl_subq = (
+            select(
+                func.coalesce(
+                    func.sum(
+                        Holding.units * (Portfolio.nav_price - func.coalesce(Snapshot.nav_price, Portfolio.nav_price))), 0,
+                )
+            )
+            .join(Portfolio, Portfolio.id == Holding.portfolio_id)
+            .outerjoin(
+                Snapshot,
+                (Snapshot.portfolio_id == Holding.portfolio_id) & (Snapshot.snapshot_date == yesterday),
+            )
+            .where(Holding.user_id == user_id)
+            .scalar_subquery()
+        )
+
+        query = (
+            select(
+                func.coalesce(func.sum(Holding.current_value), 0).label("total_equity"),
+                func.coalesce(func.sum(Holding.pnl), 0).label("total_pnl"),
+                func.count().filter(Holding.units > 0).label("portfolios_num"),
+                pnl_subq.label("today_pnl"),
+            )
+            .where(Holding.user_id == user_id)
+        )
+
+        result = await self.session.execute(query)
+        mapping = result.mappings().first() or {}
+
+        return dict(mapping)

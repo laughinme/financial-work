@@ -1,8 +1,10 @@
+from uuid import UUID
 from decimal import Decimal
 from datetime import datetime, UTC, date, timedelta
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import aliased
 
 from .portfolios_table import Portfolio
 from .portfolio_snapshots_table import PortfolioSnapshot

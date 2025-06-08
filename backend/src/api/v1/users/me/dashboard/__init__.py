@@ -2,10 +2,10 @@ from fastapi import APIRouter
 
 
 def get_me_router() -> APIRouter:
-    # from .profile import router as profile_router
+    from .summary import router as summary_router
     
     router = APIRouter(prefix='/dashboard')
 
-    # router.include_router(profile_router)
+    router.include_router(summary_router)
     
     return router
