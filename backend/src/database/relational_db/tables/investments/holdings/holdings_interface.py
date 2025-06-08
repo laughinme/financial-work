@@ -3,7 +3,7 @@ from uuid import UUID
 from datetime import  datetime, UTC, date
 from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.dialects.postgresql import insert, array_agg
 
 from domain.payments import TransactionType
 from .user_holdings_table import Holding
@@ -48,26 +48,33 @@ class HoldingsInterface:
             self.session.add_all(tx_batch)
         
         
-    async def fetch_for_portfolios(self, portfolios: list[Portfolio]):
+    async def fetch_for_portfolios(
+        self, portfolios: list[Portfolio]
+    ) -> tuple[dict[int, list[UUID]], dict[int, Decimal]]:
         p_ids = [p.id for p in portfolios]
 
         query = (
-            select(Holding.portfolio_id, func.count().label("_count"),
-                func.coalesce(func.sum(Holding.total_deposit), 0).label("deposit"))
+            select(
+                Holding.portfolio_id,
+                array_agg(func.distinct(Holding.user_id)).label("holders"),
+                func.coalesce(func.sum(Holding.total_deposit), 0).label("total_deposit"),
+            )
             .where(Holding.portfolio_id.in_(p_ids))
             .group_by(Holding.portfolio_id)
         )
-        rows = await self.session.execute(query)
-        holders_map = {pid: row._count for pid, row, _ in rows}
-        deposit_map = {pid: row.deposit for pid, _, row in rows}
+        result = await self.session.execute(query)
+        rows = result.all()
+        
+        holders_map = {pid: user_id for pid, user_id, _ in rows}
+        deposit_map = {pid: deposit for pid, _, deposit in rows}
 
         return holders_map, deposit_map
     
     
-    async def holders_and_deposit(self, portfolio_id: int) -> tuple[int, Decimal]:
+    async def holders_and_deposit(self, portfolio_id: int) -> tuple[list[UUID], Decimal]:
         query = (
             select(
-                func.count().label("_count"),
+                array_agg(func.distinct(Holding.user_id)).label("holders"),
                 func.coalesce(func.sum(Holding.total_deposit), 0).label("deposit")
             )
             .where(Holding.portfolio_id == portfolio_id)
@@ -88,3 +95,20 @@ class HoldingsInterface:
                 total_deposit = Holding.total_deposit + deposit,
             )
         )
+
+    
+    async def user_portfolio_holding(
+        self,
+        user_id: UUID,
+        portfolio_id: int
+    ) -> Holding | None:
+        query = (
+            select(Holding)
+            .where(
+                Holding.user_id == user_id,
+                Holding.portfolio_id == portfolio_id
+            )
+        )
+        holding = await self.session.scalar(query)
+        
+        return holding

@@ -70,11 +70,6 @@ class InvestmentService:
         
         # TODO: add transaction with status INVEST_PENDING
         
-        
-    async def convert_to_usd(self):
-        ready_total_usd = Decimal("0")
-        
-
 
     async def update_batch(self, portfolio_ids: set[int]):
         orders = await self.io_repo.get_by_pids(portfolio_ids)
@@ -107,3 +102,21 @@ class InvestmentService:
                 # comment=
             )
             await self.t_repo.add(transaction)
+
+
+
+    async def update_admin(
+        self,
+        
+    ):
+        pass
+    
+    
+    async def user_portfolio(
+        self,
+        user_id: UUID,
+        p_id: int
+    ):
+        holding = await self.h_repo.user_portfolio_holding(user_id, p_id)
+        
+        return holding

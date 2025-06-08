@@ -17,7 +17,7 @@ router = APIRouter()
 async def get_specific_portfolio(
     portfolio_id: Annotated[int, Path(..., description='Portfolio id')],
     portfolio_service: PortfolioService = Depends(get_portfolio_service),
-    _: User = Depends(auth_user)
+    user: User = Depends(auth_user)
 ):
-    portfolio = await portfolio_service.get_specific(portfolio_id)
+    portfolio = await portfolio_service.get_specific(user.id, portfolio_id)
     return portfolio

@@ -26,6 +26,8 @@ class PortfolioPreview(BaseModel):
     holders: int = Field(..., title='Number of investors to this portfolio')
     duration: int
     
+    invested_by_user: bool
+    
     sparkline_gain: list[SparklineGain] = []
 
 
@@ -48,3 +50,5 @@ class PortfolioOverview(BaseModel):
     deposit: Decimal
     holders: int = Field(..., title='Number of investors to this portfolio')
     duration: int
+    
+    invested_by_user: bool
