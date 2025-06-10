@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, HTTPException
 
 from core.security import auth_user
 from domain.investments import UserHolding
@@ -20,4 +20,7 @@ async def user_holding(
     user: User = Depends(auth_user)
 ):
     holding = await service.user_portfolio(user.id, portfolio_id)
+    if holding is None:
+        raise HTTPException(404, detail='No holdings found for this user and portfolio')
+        
     return holding
