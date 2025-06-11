@@ -1,5 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 
 import '../global.css';
@@ -24,61 +24,51 @@ import {
   YAxis,
 } from 'recharts';
 
-import {
-  fetchSummary,
-  fetchCharts,
-  fetchPortfolios,
-  fetchTx,
-} from '../mock/api';
+import { fetchTx, fetchCharts } from '../mock/api';
+import { usePortfolio } from '../contexts/PortfolioContext';
 
-/* ─── УТИЛИТЫ ───────────────────────────────────────────────── */
+/* helpers ------------------------------------------------------- */
 const fmtMoney = (n) => '$' + (+n).toLocaleString();
-const colored = (n) => (+n >= 0 ? 'text-green-600' : 'text-red-600');
-const Skel = ({ h = 24 }) => (
-  <div
-    className="animate-pulse bg-gray-200/60 rounded-lg"
-    style={{ height: h }}
-  />
+const colored  = (n) => (+n >= 0 ? 'text-green-600' : 'text-red-600');
+const Skel     = ({ h = 24 }) => (
+  <div className="animate-pulse bg-gray-200/60 rounded-lg" style={{ height: h }} />
 );
 
-/* ─── SparklineIcon с hover-tooltip ──────────────────────────── */
 function SparklineIcon({ data }) {
-  const series = Array.isArray(data) ? data.slice(0, 30) : [];
-
+  const [show, setShow] = useState(false);
+  const series = (Array.isArray(data) ? data.slice(0, 30) : []).map((p) => ({
+    date: p.date,
+    gain_percent: p.gain_percent,
+  }));
   return (
-    <span className="spark-container">
+    <span
+      className="spark-container"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
       <FiBarChart2 size={18} className="spark-icon" />
       <div className="spark-tooltip">
-        <div className="spark-chart-wrapper">
-          <SparklineChart data={series} />
-        </div>
+        {show && series.length > 0 && (
+          <ResponsiveContainer width="100%" height="100%">
+            <SparklineChart data={series} />
+          </ResponsiveContainer>
+        )}
       </div>
     </span>
   );
 }
 
-/* ─── КОМПОНЕНТ DashboardPage ─────────────────────────────────── */
+/* -------------------------------------------------------------- */
 export default function DashboardPage() {
-  const [sum, setSum] = useState(null);
-  const [charts, setCharts] = useState(null);
-  const [ports, setPorts] = useState(null);
-  const [tx, setTx] = useState(null);
+  const { summary, invested, aggCharts } = usePortfolio();
 
-  useEffect(() => {
-    fetchSummary().then(setSum);
-  }, []);
+  const [mockCharts, setMockCharts] = useState(null);
+  const [tx,         setTx]         = useState(null);
 
-  useEffect(() => {
-    fetchCharts().then(setCharts);
-  }, []);
+  useEffect(() => { fetchCharts().then(setMockCharts); }, []);
+  useEffect(() => { fetchTx().then(setTx);             }, []);
 
-  useEffect(() => {
-    fetchPortfolios().then(setPorts);
-  }, []);
-
-  useEffect(() => {
-    fetchTx().then(setTx);
-  }, []);
+  const chartData = invested.length ? aggCharts : mockCharts;
 
   return (
     <div className="dashboard">
@@ -88,15 +78,16 @@ export default function DashboardPage() {
         {/* HEADER */}
         <header className="dash-header">
           <div className="logo-circle" />
-          {sum ? (
+          {chartData ? (
             <>
               <span>
-                Total Equity:&nbsp;<b>{fmtMoney(sum.total_equity)}</b>
+                Total Equity:&nbsp;
+                <b>{fmtMoney(summary.total_equity)}</b>
               </span>
               <span>
                 P/L Today:&nbsp;
-                <b className={colored(sum.today_pl)}>
-                  {'+' + fmtMoney(sum.today_pl)}
+                <b className={colored(summary.today_pl)}>
+                  {'+' + fmtMoney(summary.today_pl)}
                 </b>
               </span>
               <button className="btn-deposit">Deposit</button>
@@ -108,27 +99,27 @@ export default function DashboardPage() {
 
         {/* KPI GRID */}
         <section className="kpi-grid">
-          {sum ? (
+          {chartData ? (
             <>
               <div className="kpi-card">
                 <p>Total P/L</p>
-                <h3 className={colored(sum.total_pnl)}>
-                  {'+' + fmtMoney(sum.total_pnl)}
+                <h3 className={colored(summary.total_pnl)}>
+                  {'+' + fmtMoney(summary.total_pnl)}
                 </h3>
               </div>
               <div className="kpi-card">
                 <p>Today P/L</p>
-                <h3 className={colored(sum.today_pl)}>
-                  {'+' + fmtMoney(sum.today_pl)}
+                <h3 className={colored(summary.today_pl)}>
+                  {'+' + fmtMoney(summary.today_pl)}
                 </h3>
               </div>
               <div className="kpi-card">
                 <p># Portfolios</p>
-                <h3>{sum.num_portfolios}</h3>
+                <h3>{summary.num_portfolios}</h3>
               </div>
               <div className="kpi-card">
                 <p>Last Sync</p>
-                <h3>{dayjs(sum.last_sync).format('HH:mm:ss')}</h3>
+                <h3>{dayjs().format('HH:mm:ss')}</h3>
               </div>
             </>
           ) : (
@@ -136,146 +127,105 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* CHARTS */}
+        {/* MAIN CHARTS */}
         <section className="charts">
-          {charts ? (
+          {chartData ? (
             <>
-              {/* 1) Portfolio Value vs Time */}
+              {/* Portfolio Value */}
               <div className="chart large">
                 <h2 className="chart-title">Portfolio Value vs Time</h2>
                 <ResponsiveContainer width="100%" height={240}>
-                  <LineChart data={charts.portfolio_value}>
+                  <LineChart data={chartData.balanceEquity}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis
-                      dataKey="date"
-                      stroke="#6B7280"
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis
-                      stroke="#6B7280"
-                      tick={{ fontSize: 12 }}
-                      domain={[0, 'auto']}
-                    />
+                    <XAxis dataKey="date" stroke="#6B7280" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, 'auto']} />
                     <Tooltip
                       formatter={(v) => '$' + (+v).toLocaleString()}
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #E5E7EB',
-                        borderRadius: 4,
-                      }}
-                      labelStyle={{ color: '#000000' }}
-                      itemStyle={{ color: '#000000' }}
+                      contentStyle={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 4 }}
                     />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#2563EB"
-                      strokeWidth={2}
-                      dot={false}
-                    />
+                    <Line type="monotone" dataKey="balance" stroke="#2563EB" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* 2) Daily P/L */}
+              {/* Daily P/L */}
               <div className="chart small">
                 <h2 className="chart-title">Daily P/L</h2>
                 <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={charts.daily_pl}>
+                  <BarChart data={chartData.dailyPL}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis
-                      dataKey="date"
-                      stroke="#6B7280"
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis
-                      stroke="#6B7280"
-                      tick={{ fontSize: 12 }}
-                      domain={[0, 'auto']}
-                    />
+                    <XAxis dataKey="date" stroke="#6B7280" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, 'auto']} />
                     <Tooltip
                       formatter={(v) => '$' + (+v).toLocaleString()}
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #E5E7EB',
-                        borderRadius: 4,
-                      }}
-                      labelStyle={{ color: '#000000' }}
-                      itemStyle={{ color: '#000000' }}
+                      contentStyle={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 4 }}
                     />
                     <Bar dataKey="pl" isAnimationActive={false}>
-                      {charts.daily_pl.map((entry, idx) => (
-                        <Cell
-                          key={idx}
-                          fill={entry.pl < 0 ? '#EF4444' : '#10B981'}
-                        />
+                      {chartData.dailyPL.map((d, i) => (
+                        <Cell key={i} fill={d.pl < 0 ? '#EF4444' : '#10B981'} />
                       ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* 3) Allocation */}
+              {/* Allocation */}
               <div className="chart small">
                 <h2 className="chart-title">Allocation</h2>
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Tooltip
-                      formatter={(value, name) => [
-                        `${(+value).toFixed(1)}%`,
-                        name,
-                      ]}
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #E5E7EB',
-                        borderRadius: 4,
-                      }}
-                      labelStyle={{ color: '#000000' }}
-                      itemStyle={{ color: '#000000' }}
-                    />
-                    <Pie
-                      data={charts.allocation}
-                      dataKey="share_percent"
-                      nameKey="name"
-                      innerRadius={60}
-                      outerRadius={100}
-                      labelLine={false}
-                      labelPosition="outside"
-                      offset={8}
-                      label={({ name, share_percent }) =>
-                        `${name} (${(+share_percent).toFixed(1)}%)`
-                      }
-                    >
-                      {charts.allocation.map((_, idx) => {
-                        const COLORS = ['#6366F1', '#10B981'];
-                        return (
-                          <Cell
-                            key={idx}
-                            fill={COLORS[idx % COLORS.length]}
-                          />
-                        );
-                      })}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-
-                <div className="allocation-legend">
-                  {charts.allocation.map((entry, idx) => {
-                    const COLORS = ['#6366F1', '#10B981'];
+                {invested.length ? (
+                  (() => {
+                    const total = invested.reduce((a, s) => a + s.equity, 0);
+                    const alloc = invested.map((s) => ({
+                      name: s.name,
+                      share_percent: (s.equity / total) * 100,
+                    }));
                     return (
-                      <div key={idx} className="legend-item">
-                        <span
-                          className="legend-dot"
-                          style={{ backgroundColor: COLORS[idx] }}
-                        ></span>
-                        <span className="legend-text">
-                          {entry.name} (
-                          {(+entry.share_percent).toFixed(1)}%)
-                        </span>
-                      </div>
+                      <>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <PieChart>
+                            <Tooltip
+                              formatter={(v, n) => [`${(+v).toFixed(1)}%`, n]}
+                              contentStyle={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 4 }}
+                            />
+                            <Pie
+                              data={alloc}
+                              dataKey="share_percent"
+                              nameKey="name"
+                              innerRadius={60}
+                              outerRadius={100}
+                              labelLine={false}
+                              label={({ name, share_percent }) =>
+                                `${name} (${share_percent.toFixed(1)}%)`
+                              }
+                            >
+                              {alloc.map((_, i) => (
+                                <Cell key={i} fill={i % 2 ? '#10B981' : '#6366F1'} />
+                              ))}
+                            </Pie>
+                          </PieChart>
+                        </ResponsiveContainer>
+
+                        <div className="allocation-legend">
+                          {alloc.map((e, i) => (
+                            <div key={i} className="legend-item">
+                              <span
+                                className="legend-dot"
+                                style={{ backgroundColor: i % 2 ? '#10B981' : '#6366F1' }}
+                              />
+                              <span className="legend-text">
+                                {e.name} ({e.share_percent.toFixed(1)}%)
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     );
-                  })}
-                </div>
+                  })()
+                ) : (
+                  <div className="flex items-center justify-center h-[200px] text-gray-500">
+                    No data
+                  </div>
+                )}
               </div>
             </>
           ) : (
@@ -283,41 +233,35 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* BOTTOM ROW: Portfolios You Hold + Latest Transactions */}
+        {/* PORTFOLIOS TABLE + TX */}
         <section className="bottom-row">
           <div className="portfolios-block">
             <h2 className="section-title">Portfolios You Hold</h2>
 
-            {ports ? (
+            {invested.length ? (
               <table className="dash-table">
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left' }}>Name</th>
+                    <th style={{ textAlign: 'left'  }}>Name</th>
                     <th style={{ textAlign: 'right' }}>Value</th>
                     <th style={{ textAlign: 'right' }}>Gain&nbsp;%</th>
                     <th style={{ width: 60, textAlign: 'center' }}>Spark</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {ports.map((p) => (
+                  {invested.map((p) => (
                     <tr key={p.id}>
-                      <td
-                        className="portfolio-name"
-                        style={{ textAlign: 'left' }}
-                      >
-                        {p.name}
+                      <td className="portfolio-name">
+                        <Link to={`/portfolio/${p.id}`} className="table-link">
+                          {p.name}
+                        </Link>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
-                        {fmtMoney(p.value)}
-                      </td>
-                      <td
-                        className={colored(p.gain_pct)}
-                        style={{ textAlign: 'right' }}
-                      >
-                        {'+' + (+p.gain_pct).toFixed(1) + ' %'}
+                      <td style={{ textAlign: 'right' }}>{fmtMoney(p.equity)}</td>
+                      <td className={colored(p.gain_percent)} style={{ textAlign: 'right' }}>
+                        {(p.gain_percent >= 0 ? '+' : '') + (+p.gain_percent).toFixed(1)} %
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <SparklineIcon data={p.sparkline} />
+                        <SparklineIcon data={p.sparkline_gain} />
                       </td>
                     </tr>
                   ))}
@@ -328,6 +272,7 @@ export default function DashboardPage() {
             )}
           </div>
 
+          {/* Latest Transactions */}
           <div className="tx-block">
             <h2 className="section-title">Latest Transactions</h2>
             {tx ? (
@@ -337,8 +282,7 @@ export default function DashboardPage() {
                     <span>{dayjs(t.date).format('DD MMM')}</span>
                     <span>{t.type}</span>
                     <span className={colored(t.amount)}>
-                      {(t.amount >= 0 ? '+' : '') +
-                        fmtMoney(Math.abs(t.amount))}
+                      {(t.amount >= 0 ? '+' : '') + fmtMoney(Math.abs(t.amount))}
                     </span>
                     <span className="tx-note">{t.note}</span>
                   </li>

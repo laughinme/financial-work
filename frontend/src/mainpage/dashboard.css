@@ -183,17 +183,16 @@
   top: -100px;
   left: 50%;
   transform: translateX(-50%);
-  width: 160px;         
+  width: 160px;
   height: 80px;
   background: #fff;
   border: 1px solid #E5E7EB;
   border-radius: 6px;
-  padding: 4px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, .08);
+  padding: 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
   opacity: 0;
   visibility: hidden;
-  transition: opacity .15s ease;
-  pointer-events: auto; 
+  transition: opacity 0.15s ease;
 }
 
 .spark-container:hover .spark-tooltip {

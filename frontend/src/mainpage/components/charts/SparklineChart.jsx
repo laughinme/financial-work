@@ -66,14 +66,14 @@ export default function SparklineChart({ data }) {
           type="monotone"
           dataKey="gain_percent"
           stroke={strokeColor}
-          strokeWidth={4}   /* более толстая линия */
-          dot={false}       /* обычные точки скрыты */
+          strokeWidth={4}   
+          dot={false}       
           isAnimationActive={false}
           activeDot={{
             r: 4,
             strokeWidth: 2,
             stroke: strokeColor,
-            fill: '#ffffff', /* белая точка при hover */
+            fill: '#ffffff', 
           }}
         />
       </LineChart>
