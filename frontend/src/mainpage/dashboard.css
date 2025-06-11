@@ -245,3 +245,8 @@
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.4; }
 }
+.logout {
+  background:#ef4444;
+  margin-left:12px;
+}
+.logout:hover{ background:#dc2626; }
