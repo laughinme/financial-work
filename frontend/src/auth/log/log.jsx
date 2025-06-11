@@ -1,24 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
-import './log.css';
+import '../log/log.css';
 
+import { findUser, setCurrent } from '../storage';
 
-function Log({ onSwitch, onReset }) {
+export default function Log({ onSwitch, onReset }) {
   const [email, setEmail]   = useState('');
   const [password, setPass] = useState('');
   const [showPass, setShow] = useState(false);
 
+  /* Telegram-виджет — без изменений */
   useEffect(() => {
-   
     window.onTelegramAuth = user => {
       alert(
-        `Logged in as ${user.first_name} ${user.last_name} ` +
-        `(${user.id}${user.username ? ', @' + user.username : ''})`
+        `Logged in as ${user.first_name} ${user.last_name} (${user.id})`,
       );
-      
     };
-
-   
     const script = document.createElement('script');
     script.async = true;
     script.src = 'https://telegram.org/js/telegram-widget.js?22';
@@ -29,16 +26,19 @@ function Log({ onSwitch, onReset }) {
 
     const container = document.getElementById('telegram-login-button');
     if (container) container.appendChild(script);
-
-    return () => {
-      if (container) container.innerHTML = '';
-      delete window.onTelegramAuth;
-    };
+    return () => { if (container) container.innerHTML = ''; };
   }, []);
 
-  const handleSubmit = e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    alert(`Email: ${email}\nPassword: ${password}`);
+
+    const user = findUser(email);
+    if (!user || user.password !== password) {
+      alert('Wrong email / password');
+      return;
+    }
+
+    setCurrent(email);                 // ← логиним
     window.location.href = '/main.html';
   };
 
@@ -53,7 +53,7 @@ function Log({ onSwitch, onReset }) {
           type="email"
           placeholder="example@gmail.com"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
       </div>
@@ -65,7 +65,7 @@ function Log({ onSwitch, onReset }) {
           type={showPass ? 'text' : 'password'}
           placeholder="••••••••••"
           value={password}
-          onChange={e => setPass(e.target.value)}
+          onChange={(e) => setPass(e.target.value)}
           required
         />
         <button
@@ -80,8 +80,7 @@ function Log({ onSwitch, onReset }) {
 
       <div className="options-row">
         <label className="remember">
-          <input type="checkbox" />
-          <span>Remember me</span>
+          <input type="checkbox" /> <span>Remember me</span>
         </label>
         <button type="button" className="reset" onClick={onReset}>
           Reset Password?
@@ -90,7 +89,6 @@ function Log({ onSwitch, onReset }) {
 
       <button type="submit" className="primary-btn">Log in</button>
 
-      
       <div
         id="telegram-login-button"
         style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}
@@ -105,5 +103,3 @@ function Log({ onSwitch, onReset }) {
     </form>
   );
 }
-
-export default Log;

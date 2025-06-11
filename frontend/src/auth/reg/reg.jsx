@@ -1,23 +1,21 @@
-import React, { useState, useEffect } from "react";
-import { FiEye, FiEyeOff } from "react-icons/fi";
-import "./reg.css";
+import React, { useState, useEffect } from 'react';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
+import '../reg/reg.css';
 
-function Reg({ onSwitch }) {
+import { createUser, setCurrent, findUser } from '../storage';
+
+export default function Reg({ onSwitch }) {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShow]     = useState(false);
 
+  /* Telegram-виджет оставляем как был */
   useEffect(() => {
-    
     window.onTelegramAuth = user => {
       alert(
-        `Logged in as ${user.first_name} ${user.last_name} ` +
-        `(${user.id}${user.username ? ', @' + user.username : ''})`
+        `Logged in as ${user.first_name} ${user.last_name} (${user.id})`,
       );
-      
     };
-
-
     const script = document.createElement('script');
     script.async = true;
     script.src = 'https://telegram.org/js/telegram-widget.js?22';
@@ -28,23 +26,27 @@ function Reg({ onSwitch }) {
 
     const container = document.getElementById('telegram-login-button-reg');
     if (container) container.appendChild(script);
-
     return () => {
       if (container) container.innerHTML = '';
       delete window.onTelegramAuth;
     };
   }, []);
 
-  const handleSave = e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    localStorage.setItem('email', email);
-    localStorage.setItem('password', password);
-    alert('Сохранено в LocalStorage (для теста)');
+
+    if (findUser(email)) {
+      alert('Пользователь уже существует');
+      return;
+    }
+
+    createUser(email, password);
+    setCurrent(email);                 // ← логиним
     window.location.href = '/main.html';
   };
 
   return (
-    <form className="login-card" onSubmit={handleSave}>
+    <form className="login-card" onSubmit={handleSubmit}>
       <h1 className="form-title">Registration</h1>
 
       <label className="field-label" htmlFor="email">Email Address</label>
@@ -54,7 +56,7 @@ function Reg({ onSwitch }) {
           type="email"
           placeholder="example@gmail.com"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
       </div>
@@ -66,7 +68,7 @@ function Reg({ onSwitch }) {
           type={showPass ? 'text' : 'password'}
           placeholder="••••••••••"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           minLength={6}
           required
         />
@@ -82,7 +84,6 @@ function Reg({ onSwitch }) {
 
       <button type="submit" className="primary-btn">Create an account</button>
 
-      
       <div
         id="telegram-login-button-reg"
         style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}
@@ -97,5 +98,3 @@ function Reg({ onSwitch }) {
     </form>
   );
 }
-
-export default Reg;
