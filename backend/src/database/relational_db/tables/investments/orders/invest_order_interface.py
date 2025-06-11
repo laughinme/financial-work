@@ -18,12 +18,30 @@ class InvestOrderInterface:
         self.session.add(order)
     
     
-    async def get_by_pids(self, p_ids: set[int]) -> list[InvestOrder]:
+    async def get_by_pids(
+        self, p_ids: set[int], status: InvestOrderStatus = InvestOrderStatus.ACCEPTED
+    ) -> list[InvestOrder]:
         orders = await self.session.scalars(
             select(InvestOrder)
             .where(
                 InvestOrder.portfolio_id.in_(p_ids),
-                InvestOrder.status == InvestOrderStatus.PENDING
+                InvestOrder.status == status
+            )
+            .order_by(InvestOrder.created_at)
+            .with_for_update(skip_locked=True)
+        )
+        
+        return orders.all()
+    
+    
+    async def get_by_pid(
+        self, p_id: int, status: InvestOrderStatus = InvestOrderStatus.PENDING
+    ) -> list[InvestOrder]:
+        orders = await self.session.scalars(
+            select(InvestOrder)
+            .where(
+                InvestOrder.portfolio_id == p_id,
+                InvestOrder.status == status
             )
             .order_by(InvestOrder.created_at)
             .with_for_update(skip_locked=True)
@@ -48,6 +66,27 @@ class InvestOrderInterface:
         # return dict(grouped)
         
         return orders.all()
+    
+    
+    async def portfolio_delta(self, p_id: int) -> Decimal:
+        query = (
+            select(
+                (func.sum(
+                        case((InvestOrder.direction == OrderDirection.INVEST, InvestOrder.amount), else_=0)
+                    )
+                    -
+                    func.sum(
+                        case((InvestOrder.direction == OrderDirection.WITHDRAW, InvestOrder.amount), else_=0)
+                    )
+                ).label("delta"),
+            )
+            .where(
+                InvestOrder.status == InvestOrderStatus.PENDING,
+                InvestOrder.portfolio_id == p_id
+            )
+        )
+        delta = await self.session.scalar(query)
+        return delta if delta else Decimal('0')
     
     
     async def aggregated_orders(

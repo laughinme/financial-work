@@ -21,6 +21,14 @@ def calculate_drawdown(hist: list[DayData], current_eq: Decimal) -> Decimal:
     return ((peak - current_eq) / peak * 100).quantize(Decimal('0.001'), ROUND_HALF_UP)
 
 
+def calculate_nav_price(equity: Decimal, units_total: Decimal) -> Decimal:
+    if units_total == 0:
+        nav_price = Decimal('1') 
+    else:
+        nav_price = (equity / units_total).quantize(Decimal('0.00000001'))
+    return nav_price
+
+
 async def myfx_job():
     async with get_uow_manually() as uow, httpx.AsyncClient(timeout=15) as client:
         cache_repo = CacheRepo(get_redis())
@@ -61,7 +69,7 @@ async def myfx_job():
         start = today - timedelta(days=30)
         daily_data = await service.bulk_data_daily(*accounts.keys(), start=start, end=today)
         daily_gain = await service.bulk_daily_gain(*accounts.keys(), start=start, end=today)
-        updated_p_ids = set()
+        deposit_p_ids = set()
 
         for p in portfolios:
             acc = accounts.get(p.oid_myfx)
@@ -70,13 +78,16 @@ async def myfx_job():
             
             if p.last_update_myfx < acc.last_update_date:
                 if p.deposits != acc.deposits:
-                    updated_p_ids.add(p.id)
-            
-                if p.units_total == 0:
-                    nav_price = Decimal('1') 
+                    delta_deposit = acc.deposits - p.deposits
+                    no_dep_equity = acc.equity - delta_deposit
+
+                    nav_price = calculate_nav_price(no_dep_equity, p.units_total)
+                    
+                    deposit_p_ids.add(p.id)
+                    
                 else:
-                    nav_price = (acc.equity / p.units_total).quantize(Decimal('0.00000001'))
-                
+                    nav_price = calculate_nav_price(acc.equity, p.units_total)
+                    
                 update_rows.append(p_repo._portfolio_row(p.id, acc, nav_price))
                 
                 if hist and hist[-1].date == today:
@@ -91,11 +102,12 @@ async def myfx_job():
         await p_repo.bulk_upsert_snapshots(snapshot_rows)
         await g_repo.bulk_upsert_gains(gain_rows)
         
-        if updated_p_ids:
-            await invest_service.update_batch(updated_p_ids)
-            await h_repo.revalue_holdings()
+        if deposit_p_ids:
+            await invest_service.update_batch(deposit_p_ids)
+            
+        await h_repo.revalue_holdings()
 
         logger.info(
             "MyFX sync completed: %s new / %s updates / %s snapshots / %s gains\nUpdated ids: %s",
-            len(new_oids), len(update_rows), len(snapshot_rows), len(gain_rows), updated_p_ids
+            len(new_oids), len(update_rows), len(snapshot_rows), len(gain_rows), deposit_p_ids
         )

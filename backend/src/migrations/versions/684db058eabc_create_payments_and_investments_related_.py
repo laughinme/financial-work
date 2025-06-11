@@ -90,7 +90,7 @@ def upgrade() -> None:
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('intent_id', sa.UUID(), nullable=True),
     sa.Column('portfolio_id', sa.Integer(), nullable=True),
-    sa.Column('type', sa.Enum('DEPOSIT', 'WITHDRAW_PENDING', 'WITHDRAW', 'INVEST', 'PAYBACK', 'FEE', 'PNL', name='transactiontype'), nullable=False),
+    sa.Column('type', sa.Enum('DEPOSIT', 'WITHDRAW_PENDING', 'WITHDRAW', 'INVEST', 'INVEST_PENDING', 'PAYBACK', 'FEE', 'PNL', name='transactiontype'), nullable=False),
     sa.Column('amount', sa.DECIMAL(precision=24, scale=8), nullable=False),
     sa.Column('currency', sa.String(), nullable=False),
     sa.Column('comment', sa.String(), nullable=True),

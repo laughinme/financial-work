@@ -1,4 +1,4 @@
-from uuid import UUID
+from contextlib import asynccontextmanager
 from decimal import Decimal
 from datetime import datetime, UTC, date, timedelta
 from sqlalchemy import select, func
@@ -90,8 +90,10 @@ class PortfolioInterface:
         return portfolio
     
     
-    async def get_isolated(self, portfolio_id) -> Portfolio | None:
-        return await self.session.get(Portfolio, portfolio_id, with_for_update=True)
+    @asynccontextmanager
+    async def get_isolated(self, portfolio_id: int):
+        p = await self.session.get(Portfolio, portfolio_id, with_for_update=True)
+        yield p
     
     
     async def list_all(self, size: int = 0, page: int = 0) -> list[Portfolio]:

@@ -66,48 +66,59 @@ class InvestmentService:
         if wallet is None:
             raise PaymentRequired()
         
-        # TODO: add transaction with status INVEST_PENDING
+        transaction = Transaction(
+            user_id=user_id,
+            portfolio_id=order.portfolio_id,
+            type=TransactionType.INVEST_PENDING,
+            amount=amount,
+            currency=currency,
+        )
+        await self.t_repo.add(transaction)
         
 
     async def update_batch(self, portfolio_ids: set[int]):
-        orders = await self.io_repo.get_by_pids(portfolio_ids)
-        
-        for order in orders:
-            portfolio = await self.p_repo.get_isolated(order.portfolio)
-            
-            user_id = order.user_id
-            amount = order.amount
-            nav_price = portfolio.nav_price
-            
-            wallet = await self.w_repo.withdraw(user_id, order.currency, amount)
-            if wallet is None:
-                order.status = InvestOrderStatus.FAILED
-                continue
-            order.status = InvestOrderStatus.EXECUTED
-            
-            units = (amount / nav_price).quantize(Decimal("0.00000001"))
-            portfolio.equity += amount
-            portfolio.units_total += units
-            
-            await self.h_repo.issue_units(user_id, units, amount)
-            
-            transaction = Transaction(
-                user_id=user_id,
-                portfolio_id=order.portfolio_id,
-                type=TransactionType.INVEST,
-                amount=amount,
-                currency=order.currency,
-                # comment=
-            )
-            await self.t_repo.add(transaction)
+        for p_id in portfolio_ids:
+            async with self.p_repo.get_isolated(p_id) as portfolio:
+                orders = await self.io_repo.get_by_pid(p_id, InvestOrderStatus.ACCEPTED)
 
+                nav_price = portfolio.nav_price
+                issued_total = Decimal('0')
+                
+                for order in orders:
+                    user_id = order.user_id
+                    amount = order.amount
+                    
+                    wallet = await self.w_repo.withdraw(user_id, order.currency, amount)
+                    if wallet is None:
+                        order.status = InvestOrderStatus.FAILED
+                        continue
+                    order.status = InvestOrderStatus.EXECUTED
+                    
+                    units = (amount / nav_price).quantize(Decimal("0.00000001"))
+                    issued_total += units
+                    
+                    await self.h_repo.issue_units(user_id, units, amount)
+                    
+                    transaction = Transaction(
+                        user_id=user_id,
+                        portfolio_id=order.portfolio_id,
+                        type=TransactionType.INVEST,
+                        amount=amount,
+                        currency=order.currency,
+                    )
+                    await self.t_repo.add(transaction)
+                
+                portfolio.units_total += issued_total
+                portfolio.nav_price = (portfolio.equity / portfolio.units_total).quantize(Decimal("0.00000001"))
 
 
     async def update_admin(
         self,
-        
-    ):
-        pass
+        p_id: int
+    ) -> None:
+        orders = await self.io_repo.get_by_pid(p_id, status=InvestOrderStatus.PENDING)
+        for order in orders:
+            order.status = InvestOrderStatus.ACCEPTED
     
     
     async def user_portfolio(

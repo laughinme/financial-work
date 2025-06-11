@@ -2,6 +2,9 @@ import asyncio
 import stripe
 import logging
 
+from decimal import Decimal
+
+import stripe.error
 from database.relational_db import (
     UoW,
     User,
@@ -14,7 +17,7 @@ from database.relational_db import (
 from domain.payments import PaymentStatus, PaymentProvider, CreatePaymentSchema, TransactionType, DepositAction
 from service.investments import InvestmentService
 from core.config import Config
-from .exceptions import PaymentFailed, UnsupportedEvent
+from .exceptions import PaymentFailed, UnsupportedEvent, NoUSDWallet, PaymentSystemException
 
 config = Config()
 
@@ -150,3 +153,34 @@ class StripeService:
             case _:
                 logger.warning(f"Unsupported event: {event_type}")
                 raise UnsupportedEvent()
+    
+    
+    @staticmethod
+    def _retrieve_balance() -> stripe.Balance:
+        balance = stripe.Balance.retrieve()
+        logger.info(balance)
+        for wallet in balance.available:
+            if wallet.currency == 'usd':
+                return wallet.amount
+        else:
+            raise NoUSDWallet
+        
+        
+    @staticmethod
+    async def _create_payout(amount: Decimal) -> stripe.Payout:
+       return await asyncio.to_thread(
+            stripe.Payout.create(
+                amount=amount, currency="usd", description='Payout to bank account'
+            )
+        )
+    
+    async def create_payout(self, amount: Decimal) -> stripe.Payout:
+        try:
+            balance = await asyncio.to_thread(self._retrieve_balance)
+        except NoUSDWallet:
+            raise PaymentSystemException
+        
+        logger.info('amount: %s', amount)
+        logger.info('balance: %s', balance)
+        payout = await self._create_payout(int(amount))
+        return payout

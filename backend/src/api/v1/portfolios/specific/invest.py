@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.post(
-    path='/',
+    path='/invest',
     status_code=204
 )
 async def invest_in_portfolio(
