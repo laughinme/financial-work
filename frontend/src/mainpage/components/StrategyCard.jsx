@@ -4,22 +4,18 @@ import SparklineChart from './charts/SparklineChart';
 import './strategyCard.css';
 
 
-function fmt(n, digits = 0) {
-  const num = parseFloat(n);
-  if (isNaN(num)) return '—';
+const fmt = (n, d = 0) =>
+  isNaN(+n)
+    ? '—'
+    : (+n)
+        .toFixed(d)
+        .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
-  return num.toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
-
-function riskIcons(risk) {
-  const parsed = parseInt(risk, 10);
-  let cnt = 3;
-  if (!isNaN(parsed) && parsed >= 1 && parsed <= 3) {
-    cnt = parsed;
-  }
+/* иконки риска */
+const riskIcons = (risk) => {
+  const cnt = Math.min(3, Math.max(1, parseInt(risk, 10) || 3));
   return Array.from({ length: cnt }, (_, i) => <FiZap key={i} size={14} />);
-}
+};
 
 export default function StrategyCard({ strategy }) {
   const {
@@ -36,40 +32,25 @@ export default function StrategyCard({ strategy }) {
     holders,
     duration,
     sparkline_gain,
-
     color = '#1f1f23',
   } = strategy;
 
-
-  const gainPct = (() => {
-    const gp = parseFloat(gain_percent);
-    return isNaN(gp) ? '—' : gp.toFixed(1);
-  })();
-
- 
-  const netProfit = (() => {
-    const np = parseFloat(net_profit);
-    if (isNaN(np)) return '—';
-    return np > 0 ? `+${np.toFixed(2)}` : np.toFixed(2);
-  })();
-
- 
-  const drawdownPct = (() => {
-    const dd = parseFloat(drawdown);
-    return isNaN(dd) ? '—' : `${dd.toFixed(1)}%`;
-  })();
+  const gainPct   = isNaN(+gain_percent) ? '—' : (+gain_percent).toFixed(1);
+  const netProfit =
+    isNaN(+net_profit)
+      ? '—'
+      : `${+net_profit > 0 ? '+' : ''}${(+net_profit).toFixed(2)}`;
+  const drawdownPct =
+    isNaN(+drawdown) ? '—' : `${(+drawdown).toFixed(1)}%`;
 
   return (
     <article className="card-strategy">
-
+      {/* ───────────── COVER ───────────── */}
       <div className="card-strategy__cover" style={{ background: color }}>
         <div className="cover-content">
-
           <div className="pill">
-            {riskIcons(risk)}
-            <span className="pill-text">Риск</span>
+            {riskIcons(risk)} <span className="pill-text">Риск</span>
           </div>
-
 
           <div className="main-text">
             <p className="forecast">
@@ -84,19 +65,16 @@ export default function StrategyCard({ strategy }) {
             </p>
           </div>
 
-
           <div className="sparkline-container">
             <SparklineChart data={(sparkline_gain || []).slice(0, 10)} />
           </div>
-
 
           <h2 className="cover-title">{name}</h2>
         </div>
       </div>
 
-
+      {/* ───────────── BODY ───────────── */}
       <div className="card-strategy__body">
-  
         <div className="metrics-row">
           <span>
             <span className="label">Мин.&nbsp;вклад</span>
@@ -113,7 +91,6 @@ export default function StrategyCard({ strategy }) {
             <b>{equity != null ? fmt(equity, 0) : '—'}</b>
           </span>
         </div>
-
 
         <div className="metrics-row">
           <span>
@@ -134,7 +111,6 @@ export default function StrategyCard({ strategy }) {
           </span>
         </div>
 
- 
         <div className="card-bottom">
           <FiUsers size={16} />
           <span>256 пользователей</span>

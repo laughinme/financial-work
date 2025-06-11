@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import MainPage from './mainpage/mainpage';
+import App from './App';
 import './global.css';
-createRoot(document.getElementById('root-main')).render(<MainPage />);
+
+createRoot(document.getElementById('root')).render(<App />);
