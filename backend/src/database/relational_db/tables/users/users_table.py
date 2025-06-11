@@ -1,7 +1,8 @@
 import uuid
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import UUID, String
+from sqlalchemy import UUID, String, Enum
 
+from domain.users import Role
 from ..table_base import Base
 from ..mixins import TimestampMixin
 
@@ -16,6 +17,8 @@ class User(TimestampMixin, Base):
     first_name: Mapped[str | None] = mapped_column(String, nullable=True)
     last_name: Mapped[str | None] = mapped_column(String, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    
+    role: Mapped[Role] = mapped_column(Enum(Role), nullable=False, default=Role.GUEST)
     
     providers: Mapped[list["AuthProvider"]] = relationship( # type: ignore
         back_populates="user", cascade="all, delete-orphan"

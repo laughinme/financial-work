@@ -16,7 +16,7 @@ from database.relational_db import (
     TransactionInterface
 )
 from database.redis import CacheRepo
-from domain.investments import InvestOrderStatus
+from domain.investments import InvestOrderStatus, OrderDirection
 from domain.payments import TransactionType
 from core.config import Config
 from .exceptions import PortfolioNotFound, PaymentRequired
@@ -52,14 +52,12 @@ class InvestmentService:
         if portfolio is None:
             raise PortfolioNotFound()
         
-        p_currency = portfolio.currency
-        
         order = InvestOrder(
             user_id=user_id,
             portfolio_id=portfolio_id,
-            init_amount=amount,
-            init_currency=currency,
-            currency=p_currency,
+            direction=OrderDirection.INVEST,
+            amount=amount,
+            currency=currency,
             status=InvestOrderStatus.PENDING
         )
         await self.io_repo.add(order)

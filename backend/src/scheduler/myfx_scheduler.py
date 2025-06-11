@@ -79,13 +79,13 @@ async def myfx_job():
                 
                 update_rows.append(p_repo._portfolio_row(p.id, acc, nav_price))
                 
-            if hist and hist[-1].date == today:
-                drawdown = calculate_drawdown(hist, acc.equity)
-                snapshot_rows.append(
-                    p_repo._snapshot_row(p.id, today, nav_price, acc.balance, acc.equity, drawdown)
-                )
+                if hist and hist[-1].date == today:
+                    drawdown = calculate_drawdown(hist, acc.equity)
+                    snapshot_rows.append(
+                        p_repo._snapshot_row(p.id, today, nav_price, acc.balance, acc.equity, drawdown)
+                    )
                 
-            gain_rows.extend(g_repo._gain_row(p.id, g) for g in gain)
+                gain_rows.extend(g_repo._gain_row(p.id, g) for g in gain)
             
         await p_repo.bulk_upsert(update_rows)
         await p_repo.bulk_upsert_snapshots(snapshot_rows)

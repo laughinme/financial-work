@@ -138,7 +138,7 @@ class StripeService:
                     case DepositAction.INVEST.value:
                         portfolio_id = int(metadata.get("action_id"))
                         await self.invest_service.invest(
-                            portfolio_id, amount, user_id
+                            portfolio_id, amount, currency, user_id
                         )
 
                 logger.info(

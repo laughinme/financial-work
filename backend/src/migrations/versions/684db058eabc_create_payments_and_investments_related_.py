@@ -39,8 +39,8 @@ def upgrade() -> None:
     sa.Column('net_profit', sa.DECIMAL(precision=18, scale=2), nullable=False),
     sa.Column('first_trade_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('last_sync', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_portfolios_oid_myfx'), 'portfolios', ['oid_myfx'], unique=False)
@@ -52,8 +52,8 @@ def upgrade() -> None:
     sa.Column('total_withdraw', sa.DECIMAL(precision=18, scale=8), nullable=False),
     sa.Column('current_value', sa.DECIMAL(precision=18, scale=8), nullable=False),
     sa.Column('pnl', sa.DECIMAL(precision=18, scale=8), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['portfolio_id'], ['portfolios.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('portfolio_id', 'user_id', name='pk_portfolio_user')
@@ -67,8 +67,8 @@ def upgrade() -> None:
     sa.Column('status', sa.Enum('PENDING', 'SUCCEEDED', 'FAILED', name='paymentstatus'), nullable=False),
     sa.Column('provider', sa.Enum('YOOKASSA', 'STRIPE', 'CRYPTO', 'YANDEX', 'TINKOFF', 'ROBOKASSA', 'PAYANYWAY', name='paymentprovider'), nullable=False),
     sa.Column('_metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('provider', 'provider_payment_id', name='uq_payment_provider_id')
@@ -80,8 +80,8 @@ def upgrade() -> None:
     sa.Column('nav_price', sa.DECIMAL(precision=24, scale=8), nullable=False),
     sa.Column('equity', sa.DECIMAL(precision=24, scale=2), nullable=False),
     sa.Column('drawdown', sa.DECIMAL(precision=6, scale=3), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['portfolio_id'], ['portfolios.id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('portfolio_id', 'snapshot_date', name='pk_portfolio_snapshot')
     )
@@ -94,8 +94,8 @@ def upgrade() -> None:
     sa.Column('amount', sa.DECIMAL(precision=24, scale=8), nullable=False),
     sa.Column('currency', sa.String(), nullable=False),
     sa.Column('comment', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['intent_id'], ['payment_intents.id'], ondelete='RESTRICT'),
     sa.ForeignKeyConstraint(['portfolio_id'], ['portfolios.id'], ondelete='RESTRICT'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='RESTRICT'),
@@ -109,8 +109,8 @@ def upgrade() -> None:
     sa.Column('transaction_id', sa.Integer(), nullable=False),
     sa.Column('units', sa.DECIMAL(precision=24, scale=8), nullable=False),
     sa.Column('price_at_issue', sa.DECIMAL(precision=24, scale=8), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['portfolio_id'], ['portfolios.id'], ondelete='RESTRICT'),
     sa.ForeignKeyConstraint(['transaction_id'], ['transactions.id'], ondelete='RESTRICT'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='RESTRICT'),

@@ -7,6 +7,7 @@ def get_v1_router() -> APIRouter:
     from .auth import get_auth_routers
     from .payments import get_payments_router
     from .portfolios import get_portfolios_router
+    from .admins import get_admins_router
 
     router = APIRouter(prefix='/v1')
 
@@ -15,5 +16,6 @@ def get_v1_router() -> APIRouter:
     router.include_router(get_auth_routers())
     router.include_router(get_payments_router())
     router.include_router(get_portfolios_router())
+    router.include_router(get_admins_router())
     
     return router

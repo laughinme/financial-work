@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 
 from core.security import auth_user
-from domain.users import DashboardSchema
+from domain.dashboards import DashboardSchema
 from service.investments import InvestmentService, get_investment_service
 from database.relational_db import User
 
