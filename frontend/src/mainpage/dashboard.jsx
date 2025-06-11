@@ -24,22 +24,21 @@ import {
   YAxis,
 } from 'recharts';
 
-import { fetchTx, fetchCharts } from '../mock/api';
+import { fetchCharts, fetchTx } from '../mock/api';
 import { usePortfolio } from '../contexts/PortfolioContext';
 
-/* helpers ------------------------------------------------------- */
+/** ═══════════ helpers ═══════════ */
 const fmtMoney = (n) => '$' + (+n).toLocaleString();
 const colored  = (n) => (+n >= 0 ? 'text-green-600' : 'text-red-600');
-const Skel     = ({ h = 24 }) => (
+const Skel = ({ h = 24 }) => (
   <div className="animate-pulse bg-gray-200/60 rounded-lg" style={{ height: h }} />
 );
 
 function SparklineIcon({ data }) {
   const [show, setShow] = useState(false);
-  const series = (Array.isArray(data) ? data.slice(0, 30) : []).map((p) => ({
-    date: p.date,
-    gain_percent: p.gain_percent,
-  }));
+  const series = Array.isArray(data)
+    ? data.slice(0, 30).map((p) => ({ date: p.date, gain_percent: p.gain_percent }))
+    : [];
   return (
     <span
       className="spark-container"
@@ -50,7 +49,7 @@ function SparklineIcon({ data }) {
       <div className="spark-tooltip">
         {show && series.length > 0 && (
           <ResponsiveContainer width="100%" height="100%">
-            <SparklineChart data={series} />
+            <SparklineChart data={series} full />
           </ResponsiveContainer>
         )}
       </div>
@@ -58,7 +57,7 @@ function SparklineIcon({ data }) {
   );
 }
 
-/* -------------------------------------------------------------- */
+/** ═══════════ DashboardPage ═══════════ */
 export default function DashboardPage() {
   const { summary, invested, aggCharts } = usePortfolio();
 
@@ -68,7 +67,24 @@ export default function DashboardPage() {
   useEffect(() => { fetchCharts().then(setMockCharts); }, []);
   useEffect(() => { fetchTx().then(setTx);             }, []);
 
-  const chartData = invested.length ? aggCharts : mockCharts;
+  // есть ли реальные портфели?
+  const hasInvested = invested.length > 0;
+
+  // Для графиков Balance/Equity и Daily P/L делаем единый источник
+  const balanceEquityData = hasInvested
+    ? aggCharts.balanceEquity
+    : mockCharts?.portfolio_value.map((p) => ({
+        date: p.date,
+        balance: p.value,
+        equity:  p.value,
+      })) || [];
+
+  const dailyPLData = hasInvested
+    ? aggCharts.dailyPL
+    : mockCharts?.daily_pl.map((p) => ({
+        date: p.date,
+        pl:   p.pl,
+      })) || [];
 
   return (
     <div className="dashboard">
@@ -78,7 +94,8 @@ export default function DashboardPage() {
         {/* HEADER */}
         <header className="dash-header">
           <div className="logo-circle" />
-          {chartData ? (
+
+          {hasInvested || mockCharts ? (
             <>
               <span>
                 Total Equity:&nbsp;
@@ -99,7 +116,7 @@ export default function DashboardPage() {
 
         {/* KPI GRID */}
         <section className="kpi-grid">
-          {chartData ? (
+          {hasInvested || mockCharts ? (
             <>
               <div className="kpi-card">
                 <p>Total P/L</p>
@@ -129,13 +146,13 @@ export default function DashboardPage() {
 
         {/* MAIN CHARTS */}
         <section className="charts">
-          {chartData ? (
+          {(hasInvested || mockCharts) ? (
             <>
               {/* Portfolio Value */}
               <div className="chart large">
                 <h2 className="chart-title">Portfolio Value vs Time</h2>
                 <ResponsiveContainer width="100%" height={240}>
-                  <LineChart data={chartData.balanceEquity}>
+                  <LineChart data={balanceEquityData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="date" stroke="#6B7280" tick={{ fontSize: 12 }} />
                     <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, 'auto']} />
@@ -152,7 +169,7 @@ export default function DashboardPage() {
               <div className="chart small">
                 <h2 className="chart-title">Daily P/L</h2>
                 <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={chartData.dailyPL}>
+                  <BarChart data={dailyPLData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="date" stroke="#6B7280" tick={{ fontSize: 12 }} />
                     <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, 'auto']} />
@@ -161,7 +178,7 @@ export default function DashboardPage() {
                       contentStyle={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 4 }}
                     />
                     <Bar dataKey="pl" isAnimationActive={false}>
-                      {chartData.dailyPL.map((d, i) => (
+                      {dailyPLData.map((d, i) => (
                         <Cell key={i} fill={d.pl < 0 ? '#EF4444' : '#10B981'} />
                       ))}
                     </Bar>
@@ -172,6 +189,7 @@ export default function DashboardPage() {
               {/* Allocation */}
               <div className="chart small">
                 <h2 className="chart-title">Allocation</h2>
+
                 {invested.length ? (
                   (() => {
                     const total = invested.reduce((a, s) => a + s.equity, 0);
@@ -233,18 +251,17 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* PORTFOLIOS TABLE + TX */}
+        {/* PORTFOLIOS YOU HOLD */}
         <section className="bottom-row">
           <div className="portfolios-block">
             <h2 className="section-title">Portfolios You Hold</h2>
-
             {invested.length ? (
               <table className="dash-table">
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left'  }}>Name</th>
+                    <th style={{ textAlign: 'left' }}>Name</th>
                     <th style={{ textAlign: 'right' }}>Value</th>
-                    <th style={{ textAlign: 'right' }}>Gain&nbsp;%</th>
+                    <th style={{ textAlign: 'right' }}>Gain %</th>
                     <th style={{ width: 60, textAlign: 'center' }}>Spark</th>
                   </tr>
                 </thead>
@@ -256,9 +273,12 @@ export default function DashboardPage() {
                           {p.name}
                         </Link>
                       </td>
-                      <td style={{ textAlign: 'right' }}>{fmtMoney(p.equity)}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        {fmtMoney(p.equity)}
+                      </td>
                       <td className={colored(p.gain_percent)} style={{ textAlign: 'right' }}>
-                        {(p.gain_percent >= 0 ? '+' : '') + (+p.gain_percent).toFixed(1)} %
+                        {(p.gain_percent >= 0 ? '+' : '') +
+                          (+p.gain_percent).toFixed(1)} %
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <SparklineIcon data={p.sparkline_gain} />
