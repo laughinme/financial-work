@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Depends, Request
 
 from core.config import Config
-from core.security import auth_user
 from service.auth import CredentialsService, get_credentials_service
 from domain.users import UserLogin, UserSchema
-from database.relational_db import User
 
 config = Config()
 router = APIRouter()
@@ -21,15 +19,3 @@ async def login_user(
 ) -> UserSchema:
     user = await creds_service.login(request, payload, config.SESSION_LIFETIME)
     return user
-
-
-@router.post(
-    path="/logout",
-    status_code=204
-)
-async def logout(
-    request: Request,
-    creds_service: CredentialsService = Depends(get_credentials_service),
-    _: User = Depends(auth_user)
-) -> None:
-    await creds_service.logout(request)

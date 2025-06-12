@@ -20,6 +20,10 @@ class SessionService:
         
         return session_id
     
+    async def get_session_id(self, request: Request) -> str:
+        session_id = request.cookies.get("session_id")
+        return session_id
+    
     async def get_session(self, session_id: str) -> dict | None:
         data = await self.repo.get(session_id)
         return data

@@ -49,33 +49,17 @@ class InvestmentService:
             nav_price = (equity / units_total).quantize(Decimal('0.00000001'))
         return nav_price
         
-    
-    @staticmethod
-    def calc_nav_price(equity: Decimal, units_total: Decimal) -> Decimal:
-        if units_total == 0:
-            nav_price = Decimal('1') 
-        else:
-            nav_price = (equity / units_total).quantize(Decimal('0.00000001'))
-        return nav_price
-        
         
     async def invest(
         self,
         portfolio_id: int,
         amount: Decimal,
         # currency: str,
-        # currency: str,
         user_id: UUID
     ) -> None:
         portfolio = await self.p_repo.get_by_id(portfolio_id)
         if portfolio is None:
             raise PortfolioNotFound()
-        
-        currency = portfolio.currency
-        
-        wallet = await self.w_repo.freeze(user_id, currency, amount)
-        if wallet is None:
-            raise InsufficientFunds()
         
         currency = portfolio.currency
         
@@ -96,44 +80,7 @@ class InvestmentService:
         transaction = Transaction(
             user_id=user_id,
             portfolio_id=portfolio_id,
-            portfolio_id=portfolio_id,
             type=TransactionType.INVEST_PENDING,
-            amount=amount,
-            currency=currency,
-        )
-        await self.t_repo.add(transaction)
-        
-        
-    async def withdraw(
-        self,
-        p_id: int,
-        amount: Decimal,
-        user_id: UUID,
-    ):
-        portfolio = await self.p_repo.get_by_id(p_id)
-        if portfolio is None:
-            raise PortfolioNotFound()
-        
-        currency = portfolio.currency
-        
-        holding = await self.h_repo.user_portfolio_holding(user_id, p_id)
-        if holding is None or holding.current_value < amount:
-            raise InsufficientFunds()
-        
-        order = InvestOrder(
-            user_id=user_id,
-            portfolio_id=p_id,
-            direction=OrderDirection.PAYBACK,
-            amount=amount,
-            currency=currency,
-            status=InvestOrderStatus.PENDING
-        )
-        await self.io_repo.add(order)
-        
-        transaction = Transaction(
-            user_id=user_id,
-            portfolio_id=p_id,
-            type=TransactionType.PAYBACK_PENDING,
             amount=amount,
             currency=currency,
         )
@@ -183,7 +130,6 @@ class InvestmentService:
 
                 nav_price = portfolio.nav_price
                 issued_total, burned_total = Decimal('0'), Decimal('0')
-                issued_total, burned_total = Decimal('0'), Decimal('0')
                 
                 for order in orders:
                     user_id = order.user_id
@@ -199,22 +145,14 @@ class InvestmentService:
                         units = (amount / nav_price).quantize(Decimal("0.00000001"))
                         issued_total += units
                         
-<<<<<<< HEAD
                         await self.h_repo.issue_units(user_id, units, amount)
-=======
-                        await self.h_repo.issue_units(user_id, p_id, units, amount, nav_price)
->>>>>>> 1fb91caef4852a9d0976def9bffd4f388c46abf5
                         
                         tx_type = TransactionType.INVEST
                     
                     elif order.direction == OrderDirection.PAYBACK:                        
                         units = (amount / nav_price).quantize(Decimal("0.00000001"))
                         
-<<<<<<< HEAD
                         if not await self.h_repo.burn_units(user_id, p_id, units, amount):
-=======
-                        if not await self.h_repo.burn_units(user_id, p_id, units, amount, nav_price):
->>>>>>> 1fb91caef4852a9d0976def9bffd4f388c46abf5
                             order.status = InvestOrderStatus.FAILED
                             continue
                         
@@ -235,8 +173,6 @@ class InvestmentService:
                     )
                     await self.t_repo.add(transaction)
                 
-                portfolio.units_total += issued_total - burned_total
-                portfolio.nav_price = self.calc_nav_price(portfolio.equity, portfolio.units_total)
                 portfolio.units_total += issued_total - burned_total
                 portfolio.nav_price = self.calc_nav_price(portfolio.equity, portfolio.units_total)
 
