@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 
 import "../global.css";
@@ -26,7 +26,7 @@ import {
 
 import { fetchTx } from "../mock/api";
 import { usePortfolio } from "../contexts/PortfolioContext";
-import { clearCurrent, getCurrent } from "../auth/storage";
+import { clearCurrent } from "../auth/storage";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -65,7 +65,11 @@ function SparklineIcon({ data }) {
 }
 
 export default function DashboardPage() {
+    const navigate = useNavigate();                // <— добавлено
     const [authorized, setAuthorized] = useState(null);
+
+    const { summary, invested, aggCharts } = usePortfolio();
+    const [tx, setTx] = useState(null);
 
     /* session check */
     useEffect(() => {
@@ -75,21 +79,23 @@ export default function DashboardPage() {
                 throw new Error();
             })
             .then(() => setAuthorized(true))
-            .catch(() => {
-                setAuthorized(false);
-                clearCurrent();
-                window.location.href = "/";
-            });
-    }, []);
+            .catch(() => setAuthorized(false));
+    }, [navigate]);
 
-    if (authorized === null) return null;
-    if (!authorized) return null;
-
-    const { summary, invested, aggCharts } = usePortfolio();
-    const [tx, setTx] = useState(null);
+    /* load latest transactions */
     useEffect(() => {
         fetchTx().then(setTx);
     }, []);
+
+    /* redirect when unauthorized */
+    useEffect(() => {
+        if (authorized === false) {
+            clearCurrent();
+            navigate("/", { replace: true });
+        }
+    }, [authorized, navigate]);
+
+    if (authorized === null || !authorized) return null;
 
     const hasInvested = invested.length > 0;
 
@@ -297,11 +303,8 @@ export default function DashboardPage() {
                                                     innerRadius={60}
                                                     outerRadius={100}
                                                     labelLine={false}
-                                                    label={({
-                                                        name,
-                                                        share_percent,
-                                                    }) =>
-                                                        `${name} (${share_percent.toFixed(
+                                                    label={(props) =>
+                                                        `${props.name} (${props.share_percent.toFixed(
                                                             1
                                                         )}%)`
                                                     }

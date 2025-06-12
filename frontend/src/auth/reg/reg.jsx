@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
-import "../reg/reg.css";
+import './reg.css';
 
 import { createUser, setCurrent, findUser } from "../storage";
 
