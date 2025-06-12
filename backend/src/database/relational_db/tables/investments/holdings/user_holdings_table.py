@@ -15,7 +15,7 @@ class Holding(Base, TimestampMixin):
         UUID(as_uuid=True), ForeignKey('users.id', ondelete='RESTRICT'), primary_key=True
     )
     portfolio_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey('portfolios.id'), primary_key=True
+        Integer, ForeignKey('portfolios.id', ondelete='RESTRICT'), primary_key=True
     )
 
     units: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False)

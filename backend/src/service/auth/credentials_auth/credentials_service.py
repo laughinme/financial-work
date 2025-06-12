@@ -85,8 +85,11 @@ class CredentialsService:
         
         user, password = result
         try:
-            bcrypt.checkpw(payload.password.encode(), password.encode())
-        except:
+            is_valid = bcrypt.checkpw(payload.password.encode(), password.encode())
+        except Exception:
+            raise WrongCredentials()
+
+        if not is_valid:
             raise WrongCredentials()
         
         session_id = await self.session_service.create_session(user.id, ttl)

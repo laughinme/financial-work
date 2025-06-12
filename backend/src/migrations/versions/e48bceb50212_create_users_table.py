@@ -28,6 +28,7 @@ def upgrade() -> None:
     sa.Column('password', sa.String(), nullable=False),
     sa.Column('secure_code', sa.String(), nullable=False),
     sa.Column('secret', sa.String(), nullable=False),
+    sa.Column('role', sa.Enum('GUEST', 'ADMIN', name='role'), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('phone_number')

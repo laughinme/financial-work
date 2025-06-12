@@ -1,14 +1,14 @@
+from contextlib import asynccontextmanager
 from decimal import Decimal
-from datetime import  datetime, UTC, date
-from sqlalchemy import select, update
+from datetime import datetime, UTC, date, timedelta
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import aliased
 
 from .portfolios_table import Portfolio
 from .portfolio_snapshots_table import PortfolioSnapshot
-from ..holdings import Holding
-from .daily_gains_table import DailyGain
-from domain.myfxbook import AccountSchema, DayGain
+from domain.myfxbook import AccountSchema
 
 
 class PortfolioInterface:
@@ -29,10 +29,13 @@ class PortfolioInterface:
             balance = acc.balance,
             equity = acc.equity,
             drawdown = acc.drawdown,
+            deposits = acc.deposits,
+            invitation_url = acc.invitation_url,
             gain_percent = acc.gain,
             net_profit = acc.profit,
             first_trade_at = acc.first_trade_date,
-            last_sync = datetime.now(UTC)
+            last_sync = datetime.now(UTC),
+            last_update_myfx = acc.last_update_date
         )
         if portfolio_id:
             p_dict['id'] = portfolio_id
@@ -55,15 +58,6 @@ class PortfolioInterface:
             balance = balance,
             equity = equity,
             drawdown = drawdown
-        )
-
-    @staticmethod
-    def _gain_row(portfolio_id: int, gain: DayGain) -> dict:
-        return dict(
-            portfolio_id = portfolio_id,
-            date = gain.date,
-            gain_pct = gain.value,
-            profit = gain.profit,
         )
 
 
@@ -96,6 +90,12 @@ class PortfolioInterface:
         return portfolio
     
     
+    @asynccontextmanager
+    async def get_isolated(self, portfolio_id: int):
+        p = await self.session.get(Portfolio, portfolio_id, with_for_update=True)
+        yield p
+    
+    
     async def list_all(self, size: int = 0, page: int = 0) -> list[Portfolio]:
         portfolios = await self.session.scalars(
             select(Portfolio)
@@ -104,7 +104,35 @@ class PortfolioInterface:
             .limit(size or None)
         )
         return portfolios.all()
-
+        
+        
+    async def get_snapshot_history(
+        self, portfolio_id: int, days: int
+    ) -> list[tuple[date, Decimal, Decimal, Decimal]]:
+        query = (
+            select(
+                PortfolioSnapshot.snapshot_date,
+                PortfolioSnapshot.balance,
+                PortfolioSnapshot.equity,
+                PortfolioSnapshot.drawdown
+            )
+            .where(
+                PortfolioSnapshot.portfolio_id == portfolio_id,
+                PortfolioSnapshot.snapshot_date >= date.today() - timedelta(days=days)
+            )
+            .order_by(PortfolioSnapshot.snapshot_date)
+        )
+        result = await self.session.execute(query)
+        rows = result.all()
+        
+        balance_equity = []
+        drawdown_hist = []
+        for _date, balance, equity, drawdown in rows:
+            balance_equity.append({'date': _date, 'balance': balance, 'equity': equity})
+            drawdown_hist.append({'date': _date, 'drawdown': drawdown})
+        
+        return balance_equity, drawdown_hist
+    
 
     async def bulk_insert_from_accounts(self, accounts: list[AccountSchema]) -> list[Portfolio]:
         rows = [self._portfolio_row(None, a, Decimal('1')) for a in accounts]
@@ -129,46 +157,14 @@ class PortfolioInterface:
         if not rows:
             return
         query = insert(PortfolioSnapshot).values(rows)
-        query = query.on_conflict_do_nothing(
-            index_elements=["portfolio_id", "snapshot_date"]
-        )
-        # query = query.on_conflict_do_update(
-        #     index_elements=["portfolio_id", "snapshot_date"],
-        #     set_= {
-        #         "nav_price": query.excluded.nav_price,
-        #         "balance": query.excluded.balance,
-        #         "equity": query.excluded.equity,
-        #         "drawdown": query.excluded.drawdown,
-        #         "updated_at": datetime.now(UTC)
-        #     }
-        # )
-        await self.session.execute(query)
-
-    
-    async def bulk_upsert_gains(self, rows: list[dict]):
-        if not rows:
-            return
-        query = insert(DailyGain).values(rows)
         query = query.on_conflict_do_update(
-            index_elements=["portfolio_id", "date"],
+            index_elements=["portfolio_id", "snapshot_date"],
             set_= {
-                "gain_pct": query.excluded.gain_pct,
-                "profit":   query.excluded.profit,
+                "nav_price": query.excluded.nav_price,
+                "balance": query.excluded.balance,
+                "equity": query.excluded.equity,
+                "drawdown": query.excluded.drawdown,
+                "updated_at": datetime.now(UTC)
             }
         )
-        await self.session.execute(query)
-        
-    
-    async def revalue_holdings(self):
-        query = (
-            update(Holding)
-            .values(
-                current_value = Holding.units * Portfolio.nav_price,
-                pnl = (Holding.units * Portfolio.nav_price)
-                - Holding.total_deposit
-                + Holding.total_withdraw,
-            )
-            .where(Holding.portfolio_id == Portfolio.id)
-        )
-
         await self.session.execute(query)

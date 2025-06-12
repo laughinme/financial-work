@@ -1,5 +1,3 @@
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 from redis.asyncio import Redis
 from core.config import Config
 
@@ -12,6 +10,6 @@ redis_client = Redis(
 )
 
 def get_redis() -> Redis:
-    "Returns prepared Redis session"
+    """Returns prepared Redis session"""
     return redis_client
     
