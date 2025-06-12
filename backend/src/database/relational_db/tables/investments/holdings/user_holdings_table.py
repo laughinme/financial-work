@@ -15,14 +15,14 @@ class Holding(Base, TimestampMixin):
         UUID(as_uuid=True), ForeignKey('users.id', ondelete='RESTRICT'), primary_key=True
     )
     portfolio_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey('portfolios.id'), primary_key=True
+        Integer, ForeignKey('portfolios.id', ondelete='RESTRICT'), primary_key=True
     )
 
     units: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False)
     total_deposit: Mapped[Decimal] = mapped_column(DECIMAL(18, 8), nullable=False)
     total_withdraw: Mapped[Decimal] = mapped_column(DECIMAL(18, 8), nullable=False, default=Decimal('0'))
     current_value: Mapped[Decimal] = mapped_column(DECIMAL(18, 8), nullable=False)
-    pnl: Mapped[Decimal] = mapped_column(DECIMAL(18, 8), nullable=False)
+    pnl: Mapped[Decimal] = mapped_column(DECIMAL(18, 8), nullable=False, default=Decimal('0'))
     
     __table_args__ = (
         PrimaryKeyConstraint('portfolio_id', 'user_id', name='pk_portfolio_user'),

@@ -1,0 +1,22 @@
+
+.layout{
+    display:grid;
+    grid-template-columns:72px 1fr;
+    min-height:100vh;
+  }
+  
+
+  .main-content,
+  .portfolios{
+    padding:2rem;
+    overflow-y:auto;
+    background:#f5f6f8;
+  }
+  
+
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
+  body{
+    font-family:'Poppins',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  

@@ -17,3 +17,5 @@ class DailyGain(TimestampMixin, Base):
     date: Mapped[dtm_date] = mapped_column(Date, primary_key=True)
     gain_pct: Mapped[Decimal] = mapped_column(DECIMAL(7, 3), nullable=False)
     profit: Mapped[Decimal] = mapped_column(DECIMAL(18, 2), nullable=False)
+
+    portfolio = relationship('Portfolio', back_populates='gains')

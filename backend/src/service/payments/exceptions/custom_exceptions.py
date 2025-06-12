@@ -1,0 +1,2 @@
+class NoUSDWallet(Exception):
+    pass
