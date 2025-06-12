@@ -96,3 +96,9 @@ class CredentialsService:
         request.session['session_id'] = session_id
         
         return user
+    
+    
+    async def logout(self, request: Request) -> None:
+        session_id = request.session['session_id']
+        
+        await self.session_service.revoke_session(session_id)

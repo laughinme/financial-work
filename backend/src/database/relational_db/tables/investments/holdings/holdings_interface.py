@@ -87,50 +87,8 @@ class HoldingsInterface:
         return holders, deposit
     
     
-    async def issue_units(
-        self,
-        user_id: UUID,
-        portfolio_id: int,
-        units: Decimal,
-        amount: Decimal,
-        nav_price: Decimal
-    ) -> None:
-        new_value = (units * nav_price).quantize(Decimal("0.00000001"))
-        
-        query = (
-            insert(Holding)
-            .values(
-                user_id=user_id,
-                portfolio_id=portfolio_id,
-                units=units,
-                total_deposit=amount,
-                current_value=new_value
-            )
-            .on_conflict_do_update(
-                constraint='pk_portfolio_user',
-                set_={
-                    "units": Holding.units + units,
-                    "total_deposit": Holding.total_deposit + amount,
-                    "current_value": Holding.current_value + new_value,
-                    "pnl": (
-                        Holding.current_value + new_value
-                        - (Holding.total_deposit + amount)
-                        + Holding.total_withdraw
-                    ),
-                }
-            )
-        )
-        await self.session.execute(query)
-        
-        
-    async def burn_units(
-        self,
-        user_id: UUID,
-        portfolio_id: int,
-        units: Decimal,
-        amount: Decimal
-    ) -> bool:
-        result = await self.session.execute(
+    async def issue_units(self, user_id: UUID, units: Decimal, deposit: Decimal):
+        await self.session.execute(
             update(Holding)
             .where(
                 Holding.user_id == user_id,
@@ -138,12 +96,10 @@ class HoldingsInterface:
                 Holding.units >= units
             )
             .values(
-                units = Holding.units - units,
-                total_withdraw = Holding.total_withdraw + amount,
+                units = Holding.units + units,
+                total_deposit = Holding.total_deposit + deposit,
             )
-            .returning(Holding)
         )
-        return result.scalar() is not None
 
     
     async def user_portfolio_holding(
