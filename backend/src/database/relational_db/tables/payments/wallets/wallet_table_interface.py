@@ -1,6 +1,6 @@
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import select, update
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 
@@ -40,7 +40,6 @@ class WalletInterface:
             )
             .returning(Wallet)
         )
-        
         result = await self.session.execute(query)
         
         return result.scalar()

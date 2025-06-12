@@ -22,7 +22,7 @@ class Holding(Base, TimestampMixin):
     total_deposit: Mapped[Decimal] = mapped_column(DECIMAL(18, 8), nullable=False)
     total_withdraw: Mapped[Decimal] = mapped_column(DECIMAL(18, 8), nullable=False, default=Decimal('0'))
     current_value: Mapped[Decimal] = mapped_column(DECIMAL(18, 8), nullable=False)
-    pnl: Mapped[Decimal] = mapped_column(DECIMAL(18, 8), nullable=False)
+    pnl: Mapped[Decimal] = mapped_column(DECIMAL(18, 8), nullable=False, default=Decimal('0'))
     
     __table_args__ = (
         PrimaryKeyConstraint('portfolio_id', 'user_id', name='pk_portfolio_user'),

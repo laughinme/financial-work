@@ -4,7 +4,7 @@ from datetime import timedelta, date
 from sqlalchemy import select, update, func
 from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.dialects.postgresql import array_agg
+from sqlalchemy.dialects.postgresql import array_agg, insert
 
 from domain.payments import TransactionType
 from .user_holdings_table import Holding
@@ -87,15 +87,72 @@ class HoldingsInterface:
         return holders, deposit
     
     
-    async def issue_units(self, user_id: UUID, units: Decimal, deposit: Decimal):
-        await self.session.execute(
-            update(Holding)
-            .where(Holding.user_id == user_id)
+    async def issue_units(
+        self,
+        user_id: UUID,
+        portfolio_id: int,
+        units: Decimal,
+        amount: Decimal,
+        nav_price: Decimal
+    ) -> None:
+        new_value = (units * nav_price).quantize(Decimal("0.00000001"))
+        
+        query = (
+            insert(Holding)
             .values(
-                units = Holding.units + units,
-                total_deposit = Holding.total_deposit + deposit,
+                user_id=user_id,
+                portfolio_id=portfolio_id,
+                units=units,
+                total_deposit=amount,
+                current_value=new_value
+            )
+            .on_conflict_do_update(
+                constraint='pk_portfolio_user',
+                set_={
+                    "units": Holding.units + units,
+                    "total_deposit": Holding.total_deposit + amount,
+                    "current_value": Holding.current_value + new_value,
+                    "pnl": (
+                        Holding.current_value + new_value
+                        - (Holding.total_deposit + amount)
+                        + Holding.total_withdraw
+                    ),
+                }
             )
         )
+        await self.session.execute(query)
+        
+        
+    async def burn_units(
+        self,
+        user_id: UUID,
+        portfolio_id: int,
+        units: Decimal,
+        amount: Decimal,
+        nav_price: Decimal
+    ) -> bool:
+        delta_value = (units * nav_price).quantize(Decimal("0.00000001"))
+        
+        result = await self.session.execute(
+            update(Holding)
+            .where(
+                Holding.user_id == user_id,
+                Holding.portfolio_id == portfolio_id,
+                Holding.units >= units
+            )
+            .values(
+                units = Holding.units - units,
+                total_withdraw = Holding.total_withdraw + amount,
+                current_value = Holding.current_value - delta_value,
+                pnl = (
+                    Holding.current_value - delta_value
+                    - Holding.total_deposit
+                    + (Holding.total_withdraw + amount)
+                ),
+            )
+            .returning(Holding)
+        )
+        return result.scalar() is not None
 
     
     async def user_portfolio_holding(

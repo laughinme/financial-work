@@ -76,7 +76,7 @@ class InvestOrderInterface:
                     )
                     -
                     func.sum(
-                        case((InvestOrder.direction == OrderDirection.WITHDRAW, InvestOrder.amount), else_=0)
+                        case((InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.amount), else_=0)
                     )
                 ).label("delta"),
             )
@@ -141,7 +141,7 @@ class InvestOrderInterface:
                 ).label("invest"),
                 func.sum(
                     case(
-                        (InvestOrder.direction == OrderDirection.WITHDRAW, InvestOrder.amount),
+                        (InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.amount),
                         else_=0,
                     )
                 ).label("withdraw"),
@@ -151,7 +151,7 @@ class InvestOrderInterface:
                     )
                     -
                     func.sum(
-                        case((InvestOrder.direction == OrderDirection.WITHDRAW, InvestOrder.amount), else_=0)
+                        case((InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.amount), else_=0)
                     )
                 ).label("delta"),
             )
