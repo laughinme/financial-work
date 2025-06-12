@@ -5,7 +5,7 @@ class PortfolioNotFound(HTTPException):
         super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail='Portfolio with this id not found')
 
 
-class PaymentRequired(HTTPException):
+class InsufficientFunds(HTTPException):
     def __init__(self, *args, **kwargs):
         super().__init__(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,

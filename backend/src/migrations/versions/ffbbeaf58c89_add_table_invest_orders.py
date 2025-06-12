@@ -25,7 +25,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('portfolio_id', sa.Integer(), nullable=False),
-    sa.Column('direction', sa.Enum('INVEST', 'WITHDRAW', name='orderdirection'), nullable=False),
+    sa.Column('direction', sa.Enum('INVEST', 'PAYBACK', name='orderdirection'), nullable=False),
     sa.Column('amount', sa.DECIMAL(precision=24, scale=8), nullable=False),
     sa.Column('currency', sa.CHAR(length=3), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'ACCEPTED', 'EXECUTED', 'FAILED', name='investorderstatus'), nullable=False),
