@@ -69,9 +69,10 @@ async def myfx_job():
             gain = daily_gain.get(p.oid_myfx).daily_gain
             
             if p.last_update_myfx < acc.last_update_date:
-                if p.deposits != acc.deposits:
+                if p.deposits != acc.deposits or p.withdrawals != acc.withdrawals:
                     delta_deposit = acc.deposits - p.deposits
-                    no_dep_equity = acc.equity - delta_deposit
+                    delta_withdrawal = acc.withdrawals - p.withdrawals
+                    no_dep_equity = acc.equity - delta_deposit + delta_withdrawal
 
                     nav_price = invest_service.calc_nav_price(no_dep_equity, p.units_total)
                     
