@@ -145,14 +145,14 @@ class InvestmentService:
                         units = (amount / nav_price).quantize(Decimal("0.00000001"))
                         issued_total += units
                         
-                        await self.h_repo.issue_units(user_id, units, amount)
+                        await self.h_repo.issue_units(user_id, p_id, units, amount, nav_price)
                         
                         tx_type = TransactionType.INVEST
                     
                     elif order.direction == OrderDirection.PAYBACK:                        
                         units = (amount / nav_price).quantize(Decimal("0.00000001"))
                         
-                        if not await self.h_repo.burn_units(user_id, p_id, units, amount):
+                        if not await self.h_repo.burn_units(user_id, p_id, units, amount, nav_price):
                             order.status = InvestOrderStatus.FAILED
                             continue
                         
