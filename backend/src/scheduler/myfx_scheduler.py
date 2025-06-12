@@ -21,14 +21,6 @@ def calculate_drawdown(hist: list[DayData], current_eq: Decimal) -> Decimal:
     return ((peak - current_eq) / peak * 100).quantize(Decimal('0.001'), ROUND_HALF_UP)
 
 
-def calculate_nav_price(equity: Decimal, units_total: Decimal) -> Decimal:
-    if units_total == 0:
-        nav_price = Decimal('1') 
-    else:
-        nav_price = (equity / units_total).quantize(Decimal('0.00000001'))
-    return nav_price
-
-
 async def myfx_job():
     async with get_uow_manually() as uow, httpx.AsyncClient(timeout=15) as client:
         cache_repo = CacheRepo(get_redis())
@@ -81,12 +73,12 @@ async def myfx_job():
                     delta_deposit = acc.deposits - p.deposits
                     no_dep_equity = acc.equity - delta_deposit
 
-                    nav_price = calculate_nav_price(no_dep_equity, p.units_total)
+                    nav_price = invest_service.calc_nav_price(no_dep_equity, p.units_total)
                     
                     deposit_p_ids.add(p.id)
                     
                 else:
-                    nav_price = calculate_nav_price(acc.equity, p.units_total)
+                    nav_price = invest_service.calc_nav_price(acc.equity, p.units_total)
                     
                 update_rows.append(p_repo._portfolio_row(p.id, acc, nav_price))
                 
