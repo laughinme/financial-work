@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('gain_pct', sa.DECIMAL(precision=7, scale=3), nullable=False),
     sa.Column('profit', sa.DECIMAL(precision=18, scale=2), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['portfolio_id'], ['portfolios.id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('portfolio_id', 'date')
     )

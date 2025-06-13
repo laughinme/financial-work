@@ -2,10 +2,10 @@ from fastapi import APIRouter
 
 
 def get_payment_webhooks() -> APIRouter:
-    router = APIRouter(prefix="/payment")
+    router = APIRouter(prefix="/payments")
 
-    from .payment_succeded import router as payment_succeded_router
+    from .payment_status import router as payment_status_router
 
-    router.include_router(payment_succeded_router)
+    router.include_router(payment_status_router)
 
     return router

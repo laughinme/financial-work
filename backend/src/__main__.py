@@ -35,12 +35,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    title='Finance'
+    title='Finance',
+    debug=True
 )
 
 # Including routers
 app.include_router(get_api_routers())
 app.include_router(get_webhooks())
+
+@app.get('/ping')
+async def ping():
+    return {'status': 'ok'}
+
 
 # Adding middlewares
 app.add_middleware(

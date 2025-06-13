@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from datetime import datetime
+from datetime import datetime, UTC
 from decimal import Decimal
 
 from .common import CommonModel
@@ -44,7 +44,8 @@ class AccountSchema(BaseModel):
     @field_validator('last_update_date', 'creation_date', 'first_trade_date', mode='before')
     @classmethod
     def transform_to_datetime(cls, v: str):
-        return datetime.strptime(v, "%m/%d/%Y %H:%M")
+        naive = datetime.strptime(v, "%m/%d/%Y %H:%M")
+        return naive.replace(tzinfo=UTC)
 
 
 class AccountsSchema(CommonModel):

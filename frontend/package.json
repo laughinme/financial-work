@@ -8,12 +8,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "marked": "^15.0.12",
     "otplib": "^12.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
     "react-qr-code": "^2.0.15",
-    "react-router-dom": "^7.6.1"
+    "react-router-dom": "^7.6.1",
+    "recharts": "^2.15.3"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.5.0",
