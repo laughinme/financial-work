@@ -16,4 +16,4 @@ class InvestSchema(BaseModel):
     
     
 class WithdrawSchema(BaseModel):
-    amount: Decimal = Field(..., description='Amount of funds to withdraw')
+    units: Decimal = Field(..., description='Amount of units to withdraw')

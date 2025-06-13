@@ -2,7 +2,7 @@ import uuid
 
 from decimal import Decimal
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import Integer, ForeignKey, DECIMAL, UUID, CHAR, Enum
+from sqlalchemy import Integer, ForeignKey, DECIMAL, UUID, CHAR, Enum, CheckConstraint
 # from sqlalchemy.dialects.postgresql import ENUM as PGEnum
 
 from domain.investments import InvestOrderStatus, OrderDirection
@@ -23,8 +23,7 @@ class InvestOrder(Base, TimestampMixin):
 
     direction: Mapped[OrderDirection] = mapped_column(Enum(OrderDirection), nullable=False)
     
-    amount: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False, default=Decimal('0'))
+    units: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False, default=Decimal('0'))
     currency: Mapped[str] = mapped_column(CHAR(3), nullable=False)
     status: Mapped[InvestOrderStatus] = mapped_column(Enum(InvestOrderStatus), nullable=False)
-
-    # TODO: add relationships

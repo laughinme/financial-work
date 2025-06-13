@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import datetime, UTC
 from uuid import UUID
 from datetime import timedelta, date
 from sqlalchemy import select, update, func
@@ -117,6 +118,7 @@ class HoldingsInterface:
                         - (Holding.total_deposit + amount)
                         + Holding.total_withdraw
                     ),
+                    "updated_at": datetime.now(UTC)
                 }
             )
         )
@@ -140,6 +142,12 @@ class HoldingsInterface:
             .values(
                 units = Holding.units - units,
                 total_withdraw = Holding.total_withdraw + amount,
+                current_value = Holding.current_value - amount,
+                pnl = (
+                    Holding.current_value - amount
+                    - Holding.total_deposit
+                    + (Holding.total_withdraw + amount)
+                ),
             )
             .returning(Holding)
         )

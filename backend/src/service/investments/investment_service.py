@@ -90,7 +90,7 @@ class InvestmentService:
     async def withdraw(
         self,
         p_id: int,
-        amount: Decimal,
+        units: Decimal,
         user_id: UUID,
     ):
         portfolio = await self.p_repo.get_by_id(p_id)
@@ -100,27 +100,27 @@ class InvestmentService:
         currency = portfolio.currency
         
         holding = await self.h_repo.user_portfolio_holding(user_id, p_id)
-        if holding is None or holding.current_value < amount:
+        if holding is None or holding.units < units:
             raise InsufficientFunds()
         
         order = InvestOrder(
             user_id=user_id,
             portfolio_id=p_id,
             direction=OrderDirection.PAYBACK,
-            amount=amount,
+            units=units,
             currency=currency,
             status=InvestOrderStatus.PENDING
         )
         await self.io_repo.add(order)
         
-        transaction = Transaction(
-            user_id=user_id,
-            portfolio_id=p_id,
-            type=TransactionType.PAYBACK_PENDING,
-            amount=amount,
-            currency=currency,
-        )
-        await self.t_repo.add(transaction)
+        # transaction = Transaction(
+        #     user_id=user_id,
+        #     portfolio_id=p_id,
+        #     type=TransactionType.PAYBACK_PENDING,
+        #     amount=amount,
+        #     currency=currency,
+        # )
+        # await self.t_repo.add(transaction)
         
 
     async def update_batch(self, portfolio_ids: set[int]):
@@ -144,15 +144,18 @@ class InvestmentService:
                         
                         units = (amount / nav_price).quantize(Decimal("0.00000001"))
                         issued_total += units
+                        order.units = units
                         
                         await self.h_repo.issue_units(user_id, p_id, units, amount, nav_price)
                         
                         tx_type = TransactionType.INVEST
                     
-                    elif order.direction == OrderDirection.PAYBACK:                        
-                        units = (amount / nav_price).quantize(Decimal("0.00000001"))
+                    elif order.direction == OrderDirection.PAYBACK:
+                        units = order.units
+                        amount = (units * nav_price).quantize(Decimal("0.00000001"))
+                        order.amount = amount
                         
-                        if not await self.h_repo.burn_units(user_id, p_id, units, amount, nav_price):
+                        if not await self.h_repo.burn_units(user_id, p_id, units, amount):
                             order.status = InvestOrderStatus.FAILED
                             continue
                         
