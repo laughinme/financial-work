@@ -20,4 +20,4 @@ async def withdraw_from_portfolio(
     service: Annotated[InvestmentService, Depends(get_investment_service)],
     user: Annotated[User, Depends(auth_user)]
 ):
-    await service.withdraw(portfolio_id, payload.amount, user.id)
+    await service.withdraw(portfolio_id, payload.units, user.id)
