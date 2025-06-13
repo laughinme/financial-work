@@ -12,7 +12,10 @@ router = APIRouter()
 
 @router.get(
     path='/settlements',
-    response_model=list[Settlement]
+    response_model=list[Settlement],
+    responses={
+        403: {"description": "You don't have permission to do this"}
+    }
 )
 async def settlements(
     service: Annotated[AdminService, Depends(get_admin_service)],

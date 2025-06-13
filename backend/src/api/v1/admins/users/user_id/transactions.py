@@ -13,7 +13,10 @@ router = APIRouter()
 
 @router.get(
     '/transactions',
-    response_model=list[TransactionBrief]
+    response_model=list[TransactionBrief],
+    responses={
+        403: {"description": "You don't have permission to do this"}
+    }
 )
 async def user_transactions(
     user_id: Annotated[UUID, Path(..., description='User id')],
