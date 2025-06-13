@@ -1,182 +1,111 @@
+/* ===== базовый макет страницы ===== */
 .strat-page {
-    padding: 2rem 2.5rem;
-    background: #f5f6f8;
-    height: 100%;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+  padding: 2rem 2.5rem;
+  background: #f5f6f8;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ---------- Header ---------- */
+.strat-header {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1rem 1.25rem 1.5rem;
+}
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  background: #111827;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  margin-bottom: 0.6rem;
+}
+.back-btn:hover { opacity: 0.9; }
+
+.title-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.3rem;
+}
+.strat-title { font-size: 1.5rem; font-weight: 600; margin: 0; }
+.risk-pill   { display: inline-flex; gap: 0.15rem; color: #f59e0b; }
+.broker      { font-size: 0.9rem; color: #6b7280; }
+.subtitle    { font-size: 0.875rem; color: #6b7280; margin: 0.25rem 0 1rem; }
+
+.action-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.9rem;
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.action-btn.invested { background: #9ca3af; cursor: default; }
+
+/* ---------- KPI ---------- */
+.kpi-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+.kpi-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+.kpi-label     { color: #6b7280; font-size: 0.8rem; margin: 0 0 0.4rem; }
+.kpi-card h3   { margin: 0; font-weight: 700; font-size: 1.25rem; }
+.pos { color: #10b981; }
+.neg { color: #ef4444; }
+
+/* ========== 3 графика в строку ========== */
+.chart-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;          /* мобильная верстка — по одному */
+}
+@media (min-width: 900px) {
+  .chart-row {
+    grid-template-columns: 2fr 1fr 1fr; /* как на Dashboard */
   }
-  
-  /* header */
-  .strat-header {
-    position: relative;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 1rem 1.25rem 1.5rem;
-  }
-  .back-btn{
-    display:flex;
-    align-items:center;
-    gap:.25rem;
-    font-size:.875rem;
-    background:#111827;      
-    color:#fff;            
-    border:none;
-    border-radius:6px;
-    padding:.35rem .75rem;
-    cursor:pointer;
-    margin-bottom:.6rem;
-  }
-  .back-btn:hover{opacity:.9;}
-  .title-block {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.3rem;
-  }
-  .strat-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0;
-  }
-  .risk-pill {
-    display: inline-flex;
-    gap: 0.15rem;
-    color: #f59e0b;
-  }
-  .broker {
-    font-size: 0.9rem;
-    color: #6b7280;
-  }
-  .subtitle {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin: 0.25rem 0 1rem;
-  }
-  .action-btn {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    padding: 0.55rem 1.25rem;
-    font-size: 0.9rem;
-    background: #4f46e5;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  .action-btn.invested {
-    background: #9ca3af;
-    cursor: default;
-  }
-  
-  
-  /* kpi */
-  .kpi-grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  }
-  .kpi-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
-  }
-  .kpi-label {
-    color: #6b7280;
-    font-size: 0.8rem;
-    margin: 0 0 0.4rem;
-  }
-  .kpi-card h3 {
-    margin: 0;
-    font-weight: 700;
-    font-size: 1.25rem;
-  }
-  .pos {
-    color: #10b981;
-  }
-  .neg {
-    color: #ef4444;
-  }
-  
-  /* charts */
-  .chart-section {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1rem;
-  }
-  .tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-  .tab-btn {
-    background: #f3f4f6;
-    border: none;
-    border-radius: 8px;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-  .tab-btn.active {
-    background: #4f46e5;
-    color: #fff;
-  }
-  .chart-area {
-    width: 100%;
-    height: 240px;
-  }
-  
-  /* allocation */
-  .allocation {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1rem;
-  }
-  
-  /* personal */
-  .personal {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1rem;
-  }
-  .pl-line {
-    margin: 0.4rem 0;
-  }
-  .btn-row {
-    display: flex;
-    gap: 0.75rem;
-    margin-top: 0.75rem;
-  }
-  .btn-alt {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-  .btn-alt:hover {
-    background: #f9fafb;
-  }
-  
-  /* description */
-  .description {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1rem;
-  }
-  .md :is(p, ul) {
-    margin: 0.4rem 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-  
+}
+
+.chart-box {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+}
+.chart-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* ---------- Personal block ---------- */
+.personal   { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; }
+.pl-line    { margin: 0.4rem 0; }
+.btn-row    { display: flex; gap: 0.75rem; margin-top: 0.75rem; }
+.btn-alt    { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.4rem 0.9rem; font-size: 0.8rem; cursor: pointer; }
+.btn-alt:hover { background: #f9fafb; }
+
+/* ---------- Description ---------- */
+.description { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; }
+.md :is(p, ul) { margin: 0.4rem 0; font-size: 0.9rem; line-height: 1.4; }
