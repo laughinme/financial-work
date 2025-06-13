@@ -3,7 +3,9 @@ from decimal import Decimal
 
 
 class InvestSchema(BaseModel):
-    amount: Decimal = Field(..., description='Amount of funds to invest')
+    """Payload for creating an investment order."""
+
+    amount: Decimal = Field(..., description="Amount of funds to invest")
     
     # currency: str = Field(..., max_length=3, min_length=3)
 
@@ -16,4 +18,6 @@ class InvestSchema(BaseModel):
     
     
 class WithdrawSchema(BaseModel):
-    units: Decimal = Field(..., description='Amount of units to withdraw')
+    """Payload for withdrawing units from a portfolio."""
+
+    units: Decimal = Field(..., description="Amount of units to withdraw")

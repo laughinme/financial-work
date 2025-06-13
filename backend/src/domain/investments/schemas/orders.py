@@ -7,10 +7,12 @@ from ...investments import OrderDirection, InvestOrderStatus
 
 
 class OrderOut(BaseModel):
-    id: int
-    user_id: UUID
-    portfolio_id: int
-    direction: OrderDirection
-    amount: Decimal
-    status: InvestOrderStatus
-    created_at: datetime
+    """Information about an investment order."""
+
+    id: int = Field(..., description="Order identifier")
+    user_id: UUID = Field(..., description="Identifier of the owner")
+    portfolio_id: int = Field(..., description="Related portfolio id")
+    direction: OrderDirection = Field(..., description="Order type")
+    amount: Decimal = Field(..., description="Order amount")
+    status: InvestOrderStatus = Field(..., description="Current order status")
+    created_at: datetime = Field(..., description="Creation timestamp")

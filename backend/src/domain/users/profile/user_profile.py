@@ -3,4 +3,6 @@ from uuid import UUID
 
 
 class UserSchema(BaseModel):
-    id: UUID
+    """Minimal user profile data."""
+
+    id: UUID = Field(..., description="User identifier")
