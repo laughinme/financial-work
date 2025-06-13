@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, Query
+from typing import Annotated
+from fastapi import Depends
 
-from core.security import auth_user
+from core.security import auth_user, AuthRouter
 from domain.dashboards import DashboardSchema
 from service.investments import InvestmentService, get_investment_service
 from database.relational_db import User
 
 
-router = APIRouter()
+router = AuthRouter()
 
 
 @router.get(
@@ -14,7 +15,7 @@ router = APIRouter()
     response_model=DashboardSchema
 )
 async def dashboard_summary(
-    service: InvestmentService = Depends(get_investment_service),
-    user: User = Depends(auth_user)
+    service: Annotated[InvestmentService, Depends(get_investment_service)],
+    user: Annotated[User, Depends(auth_user)]
 ):
     return await service.user_summary(user.id)

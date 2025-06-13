@@ -1,18 +1,19 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Path
 
-from core.security import auth_user
+from core.security import auth_user, AuthRouter
 from domain.investments import PortfolioCharts
 from service.portfolios import PortfolioService, get_portfolio_service
 from database.relational_db import User
 
 
-router = APIRouter()
+router = AuthRouter()
 
 
 @router.get(
     path='/history',
-    response_model=PortfolioCharts
+    response_model=PortfolioCharts,
+    responses={404: {"description": "Portfolio not found"}}
 )
 async def get_portfolio_history(
     portfolio_id: Annotated[int, Path(..., description='Portfolio id')],

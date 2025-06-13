@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 
-from core.security import auth_user
+from core.security import auth_user, AuthRouter
 from domain.investments import PortfolioPreview
 from service.portfolios import PortfolioService, get_portfolio_service
 from database.relational_db import User
 
 
-router = APIRouter()
+router = AuthRouter()
 
 
 @router.get(

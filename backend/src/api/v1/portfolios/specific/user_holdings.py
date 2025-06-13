@@ -1,18 +1,21 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Path, HTTPException
 
-from core.security import auth_user
+from core.security import auth_user, AuthRouter
 from domain.investments import UserHolding
 from service.investments import InvestmentService, get_investment_service
 from database.relational_db import User
 
 
-router = APIRouter()
+router = AuthRouter()
 
 
 @router.get(
     path='/user_holding',
-    response_model=UserHolding
+    response_model=UserHolding,
+    responses={
+        404: {"description": "No holdings found for this user and portfolio"}
+    }
 )
 async def user_holding(
     portfolio_id: Annotated[int, Path(..., description='Portfolio id')],

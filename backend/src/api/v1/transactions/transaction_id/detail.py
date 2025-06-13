@@ -1,19 +1,22 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, HTTPException
+from fastapi import Depends, Path, HTTPException
 
-from core.security import auth_user
+from core.security import auth_user, AuthRouter
 from service.transactions import TransactionsService, get_transactions_service
 from database.relational_db import User
 from domain.payments import TransactionFull
 
 
-router = APIRouter()
+router = AuthRouter()
 
 
 @router.get(
     '/', 
-    response_model=TransactionFull
+    response_model=TransactionFull,
+    responses={
+        404: {"description": "Transaction not found"}
+    }
 )
 async def transaction_detail(
     transaction_id: Annotated[int, Path(..., description='Transaction id')],

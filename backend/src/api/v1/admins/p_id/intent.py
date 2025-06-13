@@ -16,6 +16,6 @@ router = APIRouter()
 async def settlement_intent(
     portfolio_id: Annotated[int, Path(...)],
     service: Annotated[AdminService, Depends(get_admin_service)],
-    _: User = Depends(auth_user)
+    _: Annotated[User, Depends(auth_admin)]
 ):
     await service.intent(portfolio_id)

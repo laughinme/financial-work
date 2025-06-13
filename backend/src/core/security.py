@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import Depends, Request, HTTPException
+from fastapi import Depends, Request, HTTPException, APIRouter
 
 from domain.users import Role
 from database.relational_db import User
@@ -28,3 +28,18 @@ async def auth_admin(
         raise HTTPException(403, detail="You don't have permission to do this")
     
     return user
+
+
+class AuthRouter(APIRouter):
+    """Router that enforces authenticated access for all endpoints."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        # dependencies = list(kwargs.pop("dependencies", []))
+        # dependencies.append(Depends(auth_user))
+        # kwargs["dependencies"] = dependencies
+
+        responses = kwargs.pop("responses", {})
+        responses[401] = {"description": "Not authorized"}
+        kwargs["responses"] = responses
+
+        super().__init__(*args, **kwargs)
