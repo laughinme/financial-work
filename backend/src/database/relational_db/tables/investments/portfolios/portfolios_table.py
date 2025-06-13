@@ -29,6 +29,7 @@ class Portfolio(TimestampMixin, Base):
     drawdown: Mapped[Decimal] = mapped_column(DECIMAL(6, 3), nullable=False) # in percent
     
     deposits: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
+    withdrawals: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
     invitation_url: Mapped[str] = mapped_column(String, nullable=True)
     
     gain_percent: Mapped[Decimal] = mapped_column(DECIMAL(9, 3), nullable=False) # net % gain

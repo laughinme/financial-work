@@ -30,6 +30,7 @@ class PortfolioInterface:
             equity = acc.equity,
             drawdown = acc.drawdown,
             deposits = acc.deposits,
+            withdrawals = acc.withdrawals,
             invitation_url = acc.invitation_url,
             gain_percent = acc.gain,
             net_profit = acc.profit,
