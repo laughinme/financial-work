@@ -49,9 +49,12 @@ class IdentityInterface:
         )
         return await self.session.scalar(query)
     
-    
-    async def find_by_user_id(self, user_id: UUID) -> Identity | None:
+        
+    async def find_password_by_user_id(self, user_id: UUID) -> Identity | None:
         return await self.session.scalar(
             select(Identity)
-            .where(Identity.user_id == user_id)
+            .where(
+                Identity.user_id == user_id,
+                Identity.provider == Provider.PASSWORD,
+            )
         )

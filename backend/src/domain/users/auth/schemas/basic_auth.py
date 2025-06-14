@@ -13,8 +13,11 @@ class UserRegister(BaseModel):
     
     @model_validator(mode='after')
     def validator(self) -> Self:
-        if self.email is None and self.phone_number is None:
-            raise ValueError('Either a telephone number or an email address must be provided')
+        """Require exactly one identifier (email or phone)."""
+        if (self.email is None) == (self.phone_number is None):
+            raise ValueError(
+                'Either telephone number or email must be provided, but not both'
+            )
         return self
     
 

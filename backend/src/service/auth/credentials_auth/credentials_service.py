@@ -105,6 +105,27 @@ class CredentialsService:
 
 
     async def link(self, identifier: str, user: User) -> None:
-        result = await self.identity_repo.find_by_user_id(user.id)
-        if result is None:
+        """Link additional email or phone to the user."""
+        base_identity = await self.identity_repo.find_password_by_user_id(user.id)
+        if base_identity is None:
             raise NotAuthenticated
+
+        existing = await self.identity_repo.find(Provider.PASSWORD, identifier)
+        if existing is not None:
+            raise AlreadyExists()
+
+        identity = Identity(
+            user_id=user.id,
+            provider=Provider.PASSWORD,
+            external_id=identifier,
+            secret_hash=base_identity.secret_hash,
+            verified=False,
+            meta={"is_email": "@" in identifier},
+        )
+
+        await self.identity_repo.add(identity)
+
+        try:
+            await self.uow.session.flush()
+        except IntegrityError:
+            raise AlreadyExists()
