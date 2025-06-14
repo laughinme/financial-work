@@ -1,4 +1,5 @@
 // src/mainpage/dashboard.jsx
+/* eslint-disable react-hooks/exhaustive-deps */
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate }          from "react-router-dom";
@@ -26,14 +27,18 @@ import {
   YAxis,
 } from "recharts";
 
-import { usePortfolio }    from "../contexts/PortfolioContext";
-import { clearCurrent }    from "../auth/storage";
-
-import { getMe }           from "../api/users";
-import { getSummary }      from "../api/dashboard";
-import { logout as logoutApi } from "../api/auth";
-import { listTransactions }   from "../api/transactions";
-import { createDeposit }      from "../api/payments";
+import { usePortfolio }             from "../contexts/PortfolioContext";
+import { clearCurrent }             from "../auth/storage";
+import { getMe }                    from "../api/users";
+import {
+  getSummary,
+  getAllocation,      // <-- NEW API
+  getCashflow,        // <-- NEW API
+  getPortfolioValue,  // <-- NEW API
+} from "../api/dashboard";
+import { logout as logoutApi }      from "../api/auth";
+import { listTransactions }         from "../api/transactions";
+import { createDeposit }            from "../api/payments";
 
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
 const fmtMoney = (n) => "$" + (+n).toLocaleString();
@@ -44,7 +49,10 @@ const Skel = ({ h = 24 }) => (
 );
 
 const NoData = ({ h = 240 }) => (
-  <div className="flex items-center justify-center" style={{ height: h, color: "#6B7280" }}>
+  <div
+    className="flex items-center justify-center text-gray-500"
+    style={{ height: h }}
+  >
     No&nbsp;data
   </div>
 );
@@ -77,15 +85,15 @@ function SparklineIcon({ data }) {
 export default function DashboardPage() {
   const navigate = useNavigate();
 
-  //  Session check
+  /* ─────── Session check ─────────────────────── */
   const [authorized, setAuthorized] = useState(null);
   useEffect(() => {
     getMe()
       .then(() => setAuthorized(true))
       .catch(() => setAuthorized(false));
-  }, [navigate]);
+  }, []);
 
-  //  Load summary
+  /* ─────── Summary (total equity / PnL etc.) ─── */
   const [summary, setSummary] = useState(null);
   useEffect(() => {
     if (authorized) {
@@ -93,26 +101,42 @@ export default function DashboardPage() {
     }
   }, [authorized]);
 
-  // Load transactions
-  const [tx, setTx] = useState(null);
+  /* ─────── NEW API data (allocation / value / cash-flow) ─── */
+  const [allocation, setAllocation]       = useState(null);
+  const [portfolioValue, setPortfValue]   = useState(null);
+  const [cashflow, setCashflow]           = useState(null);
+
   useEffect(() => {
-    if (authorized) {
-      listTransactions(10, 1)
-        .then((rows) =>
-          rows.map((t) => ({
-            id:     t.id,
-            date:   t.created_at,
-            type:   t.type,
-            amount: +t.amount,
-            note:   t.comment || "",
-          }))
-        )
-        .then(setTx)
-        .catch(console.error);
-    }
+    if (!authorized) return;
+
+    getAllocation().then(setAllocation).catch(console.error);
+    getPortfolioValue(90)        // default period
+      .then(setPortfValue)
+      .catch(console.error);
+    getCashflow(90)
+      .then(setCashflow)
+      .catch(console.error);
   }, [authorized]);
 
-  //  Redirect if unauthorized
+  /* ─────── Transactions list ─────────────────── */
+  const [tx, setTx] = useState(null);
+  useEffect(() => {
+    if (!authorized) return;
+    listTransactions(10, 1)
+      .then((rows) =>
+        rows.map((t) => ({
+          id:     t.id,
+          date:   t.created_at,
+          type:   t.type,
+          amount: +t.amount,
+          note:   t.comment || "",
+        }))
+      )
+      .then(setTx)
+      .catch(console.error);
+  }, [authorized]);
+
+  /* ─────── Redirect if unauthorized ──────────── */
   useEffect(() => {
     if (authorized === false) {
       clearCurrent();
@@ -120,23 +144,38 @@ export default function DashboardPage() {
     }
   }, [authorized, navigate]);
 
+  /* ─────── Wait initial fetches ───────────────── */
   if (authorized === null || authorized === false || summary === null) {
-    return null;
+    return null; // could show splash screen
   }
 
-  //  Data from PortfolioContext
-  const { invested, aggCharts, toggleInvest } = usePortfolio();
+  /* ─────── Context-driven aggregates (old logic) */
+  const { invested, aggCharts } = usePortfolio();
   const hasInvested       = invested.length > 0;
-  const balanceEquityData = aggCharts.balanceEquity;
-  const dailyPLData       = aggCharts.dailyPL;
 
-  //  KPIs
+  /* prefer API portfolio-value if it arrived */
+  const balanceEquityData = portfolioValue?.length
+    ? portfolioValue.map((d) => ({
+        date: dayjs(d.date).format("YYYY-MM-DD"),
+        balance: +d.value || +d.deposits || 0, // fallback if schema differs
+      }))
+    : aggCharts.balanceEquity;
+
+  /* prefer API cash-flow for Daily P/L */
+  const dailyPLData = cashflow?.length
+    ? cashflow.map((d) => ({
+        date: dayjs(d.date).format("YYYY-MM-DD"),
+        pl: (+d.deposits || 0) - (+d.withdrawals || 0),
+      }))
+    : aggCharts.dailyPL;
+
+  /* ─────── KPIs ───────────────────────────────── */
   const totalEquity   = Number(summary.total_equity);
   const totalPnl      = Number(summary.total_pnl);
   const todayPnl      = Number(summary.today_pnl);
   const portfoliosNum = invested.length;
 
-  //  Deposit handler
+  /* ─────── Deposit handler ───────────────────── */
   const handleDeposit = async () => {
     const raw = prompt("Enter amount to deposit (USD)", "100");
     const amount = Number(raw);
@@ -145,12 +184,20 @@ export default function DashboardPage() {
     try {
       const { url } = await createDeposit(amount, "USD", `Deposit $${amount}`);
       window.location.href = url;
-    } catch (e) {
+    } catch {
       alert("Failed to create deposit");
-      console.error(e);
     }
   };
 
+  /* ─────── Allocation dataset : API → UI format */
+  const allocForChart = allocation?.length
+    ? allocation.map((a) => ({
+        name: a.name,
+        share_percent: Number(a.percentage),
+      }))
+    : null;
+
+  /* ─────── Render ─────────────────────────────── */
   return (
     <div className="dashboard">
       <Sidebar />
@@ -167,7 +214,8 @@ export default function DashboardPage() {
           <span>
             P/L Today:&nbsp;
             <b className={colored(todayPnl)}>
-              {todayPnl >= 0 ? "+" : ""}{fmtMoney(todayPnl)}
+              {todayPnl >= 0 ? "+" : ""}
+              {fmtMoney(todayPnl)}
             </b>
           </span>
 
@@ -178,7 +226,9 @@ export default function DashboardPage() {
           <button
             className="btn-deposit logout"
             onClick={async () => {
-              try { await logoutApi(); } finally {
+              try {
+                await logoutApi();
+              } finally {
                 clearCurrent();
                 window.location.href = "/";
               }
@@ -193,13 +243,15 @@ export default function DashboardPage() {
           <div className="kpi-card">
             <p>Total P/L</p>
             <h3 className={colored(totalPnl)}>
-              {totalPnl >= 0 ? "+" : ""}{fmtMoney(totalPnl)}
+              {totalPnl >= 0 ? "+" : ""}
+              {fmtMoney(totalPnl)}
             </h3>
           </div>
           <div className="kpi-card">
             <p>Today P/L</p>
             <h3 className={colored(todayPnl)}>
-              {todayPnl >= 0 ? "+" : ""}{fmtMoney(todayPnl)}
+              {todayPnl >= 0 ? "+" : ""}
+              {fmtMoney(todayPnl)}
             </h3>
           </div>
           <div className="kpi-card">
@@ -216,15 +268,29 @@ export default function DashboardPage() {
         <section className="charts">
           {/* Portfolio Value */}
           <div className="chart large">
-            <h2 className="chart-title">Portfolio Value vs Time</h2>
+            <h2 className="chart-title">Portfolio Value vs&nbsp;Time</h2>
             {hasInvested && balanceEquityData.length ? (
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={balanceEquityData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="date" stroke="#6B7280" tick={{ fontSize: 12 }} />
-                  <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, "auto"]} />
+                  <XAxis
+                    dataKey="date"
+                    stroke="#6B7280"
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis
+                    stroke="#6B7280"
+                    tick={{ fontSize: 12 }}
+                    domain={[0, "auto"]}
+                  />
                   <Tooltip formatter={(v) => "$" + (+v).toLocaleString()} />
-                  <Line type="monotone" dataKey="balance" stroke="#2563EB" strokeWidth={2} dot={false} />
+                  <Line
+                    type="monotone"
+                    dataKey="balance"
+                    stroke="#2563EB"
+                    strokeWidth={2}
+                    dot={false}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -234,17 +300,28 @@ export default function DashboardPage() {
 
           {/* Daily P/L */}
           <div className="chart small">
-            <h2 className="chart-title">Daily P/L</h2>
+            <h2 className="chart-title">Daily&nbsp;P/L</h2>
             {hasInvested && dailyPLData.length ? (
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={dailyPLData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="date" stroke="#6B7280" tick={{ fontSize: 12 }} />
-                  <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, "auto"]} />
+                  <XAxis
+                    dataKey="date"
+                    stroke="#6B7280"
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis
+                    stroke="#6B7280"
+                    tick={{ fontSize: 12 }}
+                    domain={[0, "auto"]}
+                  />
                   <Tooltip formatter={(v) => "$" + (+v).toLocaleString()} />
                   <Bar dataKey="pl" isAnimationActive={false}>
                     {dailyPLData.map((d, i) => (
-                      <Cell key={i} fill={d.pl < 0 ? "#EF4444" : "#10B981"} />
+                      <Cell
+                        key={i}
+                        fill={d.pl < 0 ? "#EF4444" : "#10B981"}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -257,21 +334,19 @@ export default function DashboardPage() {
           {/* Allocation */}
           <div className="chart small">
             <h2 className="chart-title">Allocation</h2>
-            {invested.length ? (
+            {allocForChart ? (
               (() => {
-                const total = invested.reduce((sum, s) => sum + s.equity, 0);
-                if (!total) return <NoData h={200} />;
-                const alloc = invested.map((s) => ({
-                  name: s.name,
-                  share_percent: (s.equity / total) * 100,
-                }));
+                if (!allocForChart.length) return <NoData h={200} />;
+
                 return (
                   <>
                     <ResponsiveContainer width="100%" height={200}>
                       <PieChart>
-                        <Tooltip formatter={(v, n) => [`${(+v).toFixed(1)}%`, n]} />
+                        <Tooltip
+                          formatter={(v, n) => [`${(+v).toFixed(1)}%`, n]}
+                        />
                         <Pie
-                          data={alloc}
+                          data={allocForChart}
                           dataKey="share_percent"
                           nameKey="name"
                           innerRadius={60}
@@ -281,19 +356,24 @@ export default function DashboardPage() {
                             `${name} ${(percent * 100).toFixed(0)}%`
                           }
                         >
-                          {alloc.map((_, i) => (
-                            <Cell key={i} fill={i % 2 ? "#10B981" : "#6366F1"} />
+                          {allocForChart.map((_, i) => (
+                            <Cell
+                              key={i}
+                              fill={i % 2 ? "#10B981" : "#6366F1"}
+                            />
                           ))}
                         </Pie>
                       </PieChart>
                     </ResponsiveContainer>
 
                     <div className="allocation-legend">
-                      {alloc.map((e, i) => (
+                      {allocForChart.map((e, i) => (
                         <div key={i} className="legend-item">
                           <span
                             className="legend-dot"
-                            style={{ backgroundColor: i % 2 ? "#10B981" : "#6366F1" }}
+                            style={{
+                              backgroundColor: i % 2 ? "#10B981" : "#6366F1",
+                            }}
                           />
                           <span className="legend-text">
                             {e.name} ({e.share_percent.toFixed(1)}%)
@@ -305,7 +385,7 @@ export default function DashboardPage() {
                 );
               })()
             ) : (
-              <NoData h={200} />
+              <Skel h={200} />
             )}
           </div>
         </section>
@@ -321,7 +401,7 @@ export default function DashboardPage() {
                   <tr>
                     <th style={{ textAlign: "left" }}>Name</th>
                     <th style={{ textAlign: "right" }}>Value</th>
-                    <th style={{ textAlign: "right" }}>Gain %</th>
+                    <th style={{ textAlign: "right" }}>Gain&nbsp;%</th>
                     <th style={{ width: 60, textAlign: "center" }}>Spark</th>
                   </tr>
                 </thead>
@@ -333,12 +413,16 @@ export default function DashboardPage() {
                           {p.name}
                         </Link>
                       </td>
-                      <td style={{ textAlign: "right" }}>{fmtMoney(p.equity)}</td>
+                      <td style={{ textAlign: "right" }}>
+                        {fmtMoney(p.equity)}
+                      </td>
                       <td
                         className={colored(p.gain_percent)}
                         style={{ textAlign: "right" }}
                       >
-                        {(p.gain_percent >= 0 ? "+" : "") + (+p.gain_percent).toFixed(1)}%
+                        {(p.gain_percent >= 0 ? "+" : "") +
+                          (+p.gain_percent).toFixed(1)}
+                        %
                       </td>
                       <td style={{ textAlign: "center" }}>
                         <SparklineIcon data={p.sparkline_gain} />
@@ -362,7 +446,8 @@ export default function DashboardPage() {
                     <span>{dayjs(t.date).format("DD MMM")}</span>
                     <span>{t.type}</span>
                     <span className={colored(t.amount)}>
-                      {(t.amount >= 0 ? "+" : "") + fmtMoney(Math.abs(t.amount))}
+                      {(t.amount >= 0 ? "+" : "") +
+                        fmtMoney(Math.abs(t.amount))}
                     </span>
                     <span className="tx-note">{t.note}</span>
                   </li>
