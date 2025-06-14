@@ -11,7 +11,10 @@ router = APIRouter()
 @router.post(
     path='/register',
     response_model=UserSchema,
-    status_code=201
+    status_code=201,
+    responses={
+        409: {"description": "User with provided credentials already exists"}
+    }
 )
 async def register_user(
     request: Request,

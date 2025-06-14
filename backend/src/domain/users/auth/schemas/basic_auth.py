@@ -3,10 +3,12 @@ from pydantic import BaseModel, Field, EmailStr, model_validator
 
 
 class UserRegister(BaseModel):
-    email: EmailStr | None = Field(None)
-    phone_number: str | None = Field(None)
-    
-    password: str = Field(...)
+    """Data required for user registration."""
+
+    email: EmailStr | None = Field(None, description="User e-mail")
+    phone_number: str | None = Field(None, description="User phone number")
+
+    password: str = Field(..., description="User password")
     # secret: str = Field(...)
     
     @model_validator(mode='after')
@@ -17,8 +19,10 @@ class UserRegister(BaseModel):
     
 
 class UserLogin(BaseModel):
-    email: EmailStr | None = Field(None)
-    phone_number: str | None = Field(None)
+    """Credentials used for user login."""
 
-    password: str = Field(...)
+    email: EmailStr | None = Field(None, description="User e-mail")
+    phone_number: str | None = Field(None, description="User phone number")
+
+    password: str = Field(..., description='User password')
     # secret: str = Field(...)

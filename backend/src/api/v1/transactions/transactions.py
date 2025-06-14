@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 
-from core.security import auth_user
+from core.security import auth_user, AuthRouter
 from service.transactions import TransactionsService, get_transactions_service
 from database.relational_db import User
 from domain.payments import TransactionBrief
 
 
-router = APIRouter()
+router = AuthRouter()
 
 
 @router.get(

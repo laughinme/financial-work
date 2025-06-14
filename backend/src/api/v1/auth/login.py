@@ -1,3 +1,4 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends, Request
 
 from core.config import Config
@@ -12,7 +13,8 @@ router = APIRouter()
 
 @router.post(
     path="/login",
-    response_model=UserSchema
+    response_model=UserSchema,
+    responses={401: {"description": "Wrong credentials"}}
 )
 async def login_user(
     request: Request,
@@ -25,11 +27,12 @@ async def login_user(
 
 @router.post(
     path="/logout",
-    status_code=204
+    status_code=204,
+    responses={401: {"description": "Not authorized"}}
 )
 async def logout(
     request: Request,
-    creds_service: CredentialsService = Depends(get_credentials_service),
-    _: User = Depends(auth_user)
+    creds_service: Annotated[CredentialsService, Depends(get_credentials_service)],
+    _: Annotated[User, Depends(auth_user)]
 ) -> None:
     await creds_service.logout(request)

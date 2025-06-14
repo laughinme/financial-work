@@ -3,8 +3,10 @@ from uuid import UUID
 
 
 class TelegramUserSchema(BaseModel):
-    id: int
-    first_name: str
-    last_name: str | None = Field(None)
-    username: str | None = Field(None)
-    photo_url: str | None = Field(None)
+    """Telegram profile linked to a user."""
+
+    id: int = Field(..., description="Telegram user identifier")
+    first_name: str = Field(..., description="Telegram first name")
+    last_name: str | None = Field(None, description="Telegram last name")
+    username: str | None = Field(None, description="Telegram username")
+    photo_url: str | None = Field(None, description="Avatar URL from Telegram")

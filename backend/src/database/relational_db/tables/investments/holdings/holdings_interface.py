@@ -208,3 +208,62 @@ class HoldingsInterface:
         mapping = result.mappings().first() or {}
 
         return dict(mapping)
+
+
+    async def allocation(self, user_id: UUID) -> list:
+        total_sub = (
+            select(func.coalesce(func.sum(Holding.current_value), 1).label('total'))
+            .where(Holding.user_id == user_id)
+            .subquery()
+        )
+        
+        query = (
+            select(
+                Portfolio.id,
+                Portfolio.name,
+                Holding.current_value,
+                (Holding.current_value / total_sub.c.total).label('share'),
+                (Holding.current_value / total_sub.c.total * 100).label('percentage')
+            )
+            .join(Holding, Portfolio.id == Holding.portfolio_id)
+            .where(Holding.user_id == user_id)
+        )
+        result = await self.session.execute(query)
+        holdings = result.mappings().all()
+        
+        return holdings
+
+
+    async def portfolio_value_series(
+        self,
+        user_id: UUID,
+        days: int
+    ) -> list[dict]:
+        start = date.today() - timedelta(days=days)
+
+        Snap = aliased(PortfolioSnapshot)
+        query = (
+            select(
+                Snap.snapshot_date.label("day"),
+                func.sum(Holding.units * Snap.nav_price).label("equity")
+            )
+            .join(Holding, Holding.portfolio_id == Snap.portfolio_id)
+            .where(
+                Holding.user_id == user_id,
+                Snap.snapshot_date >= start
+            )
+            .group_by(Snap.snapshot_date)
+            .order_by(Snap.snapshot_date)
+        )
+
+        rows = (await self.session.execute(query)).all()
+
+        result = []
+        prev = None
+        for day, eq in rows:
+            if prev is None:
+                result.append(dict(day=day, equity=eq, daily_pnl=None))
+            else:
+                result.append(dict(day=day, equity=eq, daily_pnl=eq - prev))
+            prev = eq
+        return result

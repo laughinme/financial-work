@@ -11,11 +11,14 @@ router = APIRouter()
 
 @router.post(
     path='/intent',
-    status_code=204
+    status_code=204,
+    responses={
+        403: {"description": "You don't have permission to do this"}
+    }
 )
 async def settlement_intent(
     portfolio_id: Annotated[int, Path(...)],
     service: Annotated[AdminService, Depends(get_admin_service)],
-    _: User = Depends(auth_user)
+    _: Annotated[User, Depends(auth_admin)]
 ):
     await service.intent(portfolio_id)
