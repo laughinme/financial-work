@@ -11,12 +11,14 @@ import SparklineChart     from "./charts/SparklineChart";
 import "./strategyPortfolio.css";
 import { usePortfolio }   from "../../contexts/PortfolioContext";
 
+const CHART_HEIGHT = 240;   // высота всех графиков
+
 export default function StrategyPortfolioPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { strategies, toggleInvest, getHistory, getHolding } = usePortfolio();
 
-  /* локальный state */
+  /* локальное состояние */
   const [history, setHistory] = useState(null);
   const [holding, setHolding] = useState(null);
 
@@ -24,7 +26,7 @@ export default function StrategyPortfolioPage() {
   const data = strategies.find((s) => s.id.toString() === id);
   if (!data) return <div style={{ padding: 32 }}>Loading…</div>;
 
-  /* запрашиваем историю и holding */
+  /* запрашиваем history + holding */
   useEffect(() => {
     getHistory(id, 90).then(setHistory).catch(console.error);
     getHolding(id).then(setHolding).catch(() => setHolding(null));
@@ -51,21 +53,11 @@ export default function StrategyPortfolioPage() {
     })) || [];
 
   /* заглушка “No data” */
-  const NoData = ({ h = 240 }) => (
-    <div
-      style={{
-        height: h,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#6B7280",
-      }}
-    >
-      No&nbsp;data
-    </div>
+  const NoData = () => (
+    <div className="nodata">No&nbsp;data</div>
   );
 
-  /* ──────────────────────────── JSX ─────────────────────────── */
+  /* ─────────── JSX ─────────── */
   return (
     <div className="layout">
       <Sidebar />
@@ -118,33 +110,42 @@ export default function StrategyPortfolioPage() {
           </div>
         </section>
 
-        {/* ─── 3 графика в строку ─── */}
+        {/* 3 графика в строку */}
         <section className="chart-row">
+          {/* Balance / Equity */}
           <div className="chart-box">
             <h3 className="chart-title">Balance / Equity</h3>
-            {balanceData.length ? (
-              <BalanceEquityChart data={balanceData} />
-            ) : (
-              <NoData />
-            )}
+            <div className="chart-wrapper" style={{ height: CHART_HEIGHT }}>
+              {balanceData.length ? (
+                <BalanceEquityChart data={balanceData} />
+              ) : (
+                <NoData />
+              )}
+            </div>
           </div>
 
+          {/* Drawdown */}
           <div className="chart-box">
             <h3 className="chart-title">Drawdown</h3>
-            {drawdownData.length ? (
-              <DrawdownChart data={drawdownData} />
-            ) : (
-              <NoData />
-            )}
+            <div className="chart-wrapper" style={{ height: CHART_HEIGHT }}>
+              {drawdownData.length ? (
+                <DrawdownChart data={drawdownData} />
+              ) : (
+                <NoData />
+              )}
+            </div>
           </div>
 
+          {/* Daily P/L */}
           <div className="chart-box">
             <h3 className="chart-title">Daily&nbsp;P/L</h3>
-            {plData.length ? (
-              <SparklineChart data={plData} full />
-            ) : (
-              <NoData />
-            )}
+            <div className="chart-wrapper" style={{ height: CHART_HEIGHT }}>
+              {plData.length ? (
+                <SparklineChart data={plData} full />
+              ) : (
+                <NoData />
+              )}
+            </div>
           </div>
         </section>
 

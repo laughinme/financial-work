@@ -1,4 +1,4 @@
-/* ===== базовый макет страницы ===== */
+/* ============ базовый макет ============ */
 .strat-page {
   padding: 2rem 2.5rem;
   background: #f5f6f8;
@@ -70,20 +70,20 @@
   border-radius: 12px;
   padding: 1rem 1.25rem;
 }
-.kpi-label     { color: #6b7280; font-size: 0.8rem; margin: 0 0 0.4rem; }
-.kpi-card h3   { margin: 0; font-weight: 700; font-size: 1.25rem; }
+.kpi-label  { color: #6b7280; font-size: 0.8rem; margin: 0 0 0.4rem; }
+.kpi-card h3 { margin: 0; font-weight: 700; font-size: 1.25rem; }
 .pos { color: #10b981; }
 .neg { color: #ef4444; }
 
-/* ========== 3 графика в строку ========== */
+/* ========== графики ========== */
 .chart-row {
   display: grid;
   gap: 1rem;
-  grid-template-columns: 1fr;          /* мобильная верстка — по одному */
+  grid-template-columns: 1fr;            /* мобильная колонка */
 }
 @media (min-width: 900px) {
   .chart-row {
-    grid-template-columns: 2fr 1fr 1fr; /* как на Dashboard */
+    grid-template-columns: 2fr 1fr 1fr;  /* десктоп */
   }
 }
 
@@ -92,11 +92,26 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 1rem;
+  display: flex;            /* чтобы заголовок сверху, график снизу */
+  flex-direction: column;
 }
 .chart-title {
   margin: 0 0 8px;
   font-size: 1rem;
   font-weight: 600;
+}
+.chart-wrapper {
+  flex: 1;                  /* заполняет всё доступное */
+}
+
+/* заглушка “No data” */
+.nodata {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 0.9rem;
 }
 
 /* ---------- Personal block ---------- */
