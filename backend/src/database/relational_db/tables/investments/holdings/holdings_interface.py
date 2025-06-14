@@ -232,3 +232,38 @@ class HoldingsInterface:
         holdings = result.mappings().all()
         
         return holdings
+
+
+    async def portfolio_value_series(
+        self,
+        user_id: UUID,
+        days: int
+    ) -> list[dict]:
+        start = date.today() - timedelta(days=days)
+
+        Snap = aliased(PortfolioSnapshot)
+        query = (
+            select(
+                Snap.snapshot_date.label("day"),
+                func.sum(Holding.units * Snap.nav_price).label("equity")
+            )
+            .join(Holding, Holding.portfolio_id == Snap.portfolio_id)
+            .where(
+                Holding.user_id == user_id,
+                Snap.snapshot_date >= start
+            )
+            .group_by(Snap.snapshot_date)
+            .order_by(Snap.snapshot_date)
+        )
+
+        rows = (await self.session.execute(query)).all()
+
+        result = []
+        prev = None
+        for day, eq in rows:
+            if prev is None:
+                result.append(dict(day=day, equity=eq, daily_pnl=None))
+            else:
+                result.append(dict(day=day, equity=eq, daily_pnl=eq - prev))
+            prev = eq
+        return result

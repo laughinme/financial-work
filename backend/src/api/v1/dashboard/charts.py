@@ -31,3 +31,15 @@ async def cashflow(
     days: int = Query(90, ge=1, le=365, description='Chart chronological period'),
 ):
     return await service.cashflow(user.id, days)
+
+
+@router.get(
+    path='/portfolio-value',
+    response_model=list[CashFlow]
+)
+async def portfolio_value(
+    service: Annotated[DashboardService, Depends(get_dashboard_service)],
+    user: Annotated[User, Depends(auth_user)],
+    days: int = Query(90, ge=1, le=365, description='Chart chronological period'),
+):
+    return await service.portfolio_value(user.id, days)

@@ -23,5 +23,9 @@ class DashboardService:
         return await self.h_repo.allocation(user_id)
 
     
-    async def cashflow(self, user_id: UUID, days: int):
+    async def cashflow(self, user_id: UUID, days: int) -> list:
         return await self.tx_repo.cash_flow(user_id, days)
+
+
+    async def portfolio_value(self, user_id: UUID, days: int) -> list[dict]:
+        return await self.h_repo.portfolio_value_series(user_id, days)

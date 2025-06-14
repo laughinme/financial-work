@@ -21,3 +21,11 @@ class CashFlow(BaseModel):
     withdraw: Decimal = Field(
         ..., alias="withdrawals", description='Sum of withdrawals for current date'
     )
+
+
+class PortfolioValue(BaseModel):
+    date: datetime
+    equity: Decimal
+    daily_pnl: Decimal | None = Field(
+        ..., description="Δ equity vs previous day (can be <0)"
+    )
