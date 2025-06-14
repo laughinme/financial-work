@@ -2,7 +2,10 @@ from enum import Enum
 
 
 class Provider(Enum):
-    """Different oauth providers."""
-    CREDENTIALS = "credentials"
+    """Supported authentication providers."""
+
+    PASSWORD = "password"
     TELEGRAM = "telegram"
     GOOGLE = "google"
+    APPLE = "apple"
+    # PHONE_OTP = "phone_otp"

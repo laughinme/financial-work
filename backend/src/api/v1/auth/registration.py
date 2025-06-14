@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Request
+from typing import Annotated
+from fastapi import APIRouter, Depends
 
 from core.config import Config
 from service.auth import CredentialsService, get_credentials_service
@@ -17,9 +18,8 @@ router = APIRouter()
     }
 )
 async def register_user(
-    request: Request,
     payload: UserRegister,
-    creds_service: CredentialsService = Depends(get_credentials_service)
+    creds_service: Annotated[CredentialsService, Depends(get_credentials_service)]
 ) -> UserSchema:
-    user = await creds_service.register(request, payload, config.SESSION_LIFETIME)
+    user = await creds_service.register(payload, config.SESSION_LIFETIME)
     return user

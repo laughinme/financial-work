@@ -1,2 +1,0 @@
-from .telegram_user_table import TelegramProvider
-from .tg_table_interface import TelegramInterface

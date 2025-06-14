@@ -3,8 +3,7 @@ from fastapi import Depends
 from database.relational_db import (
     UoW,
     get_uow,
-    TelegramInterface,
-    AuthProvidersInterface,
+    IdentityInterface,
     UserInterface,
 )
 from .telegram_service import TelegramService
@@ -15,10 +14,9 @@ async def get_telegram_service(
     uow: UoW = Depends(get_uow),  
     session_service: SessionService = Depends(get_session_service),
 ) -> TelegramService:
-    tg_repo = TelegramInterface(uow.session)
-    auth_repo = AuthProvidersInterface(uow.session)
+    identity_repo = IdentityInterface(uow.session)
     user_repo = UserInterface(uow.session)
-    
+
     return TelegramService(
-        tg_repo, auth_repo, user_repo, session_service, uow
+        identity_repo, user_repo, session_service, uow
     )

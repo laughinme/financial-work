@@ -1,6 +1,8 @@
 import bcrypt
 import random 
 import string
+from uuid import UUID
+from datetime import datetime, UTC
 
 from fastapi import Request
 from sqlalchemy.exc import IntegrityError
@@ -8,15 +10,13 @@ from sqlalchemy.exc import IntegrityError
 from database.relational_db import (
     UserInterface,
     User,
-    CredentialsInterface,
-    CredsProvider,
-    AuthProvidersInterface,
-    AuthProvider,
-    UoW
+    IdentityInterface,
+    Identity,
+    UoW,
 )
 from domain.users import Provider, UserRegister, UserLogin
 from core.config import Config
-from .exceptions import AlreadyExists, WrongCredentials
+from .exceptions import AlreadyExists, WrongCredentials, NotAuthenticated
 from ..session import SessionService
 
 
@@ -26,22 +26,21 @@ config = Config()
 class CredentialsService:
     def __init__(
         self,
-        creds_repo: CredentialsInterface,
-        auth_repo: AuthProvidersInterface,
+        request: Request,
+        identity_repo: IdentityInterface,
         user_repo: UserInterface,
         session_service: SessionService,
-        uow: UoW
+        uow: UoW,
     ):
-        self.creds_repo = creds_repo
-        self.auth_repo = auth_repo
+        self.identity_repo = identity_repo
         self.user_repo = user_repo
         self.session_service = session_service
         self.uow = uow
+        self.request = request
     
     
     async def register(
         self,
-        request: Request,
         payload: UserRegister,
         ttl: int
     ) -> User:
@@ -54,32 +53,33 @@ class CredentialsService:
         
         user = User(
             secure_code="".join([random.choice(string.ascii_letters) for _ in range(64)]),
+            allow_password_login=True,
         )
-        auth = AuthProvider(
-            provider=Provider.CREDENTIALS,
-            provider_user_id=identifier,
-            credentials=CredsProvider(
-                is_email=payload.email is not None,
-                password=hashed_password
-            )
+        identity = Identity(
+            provider=Provider.PASSWORD,
+            external_id=identifier,
+            secret_hash=hashed_password,
+            verified=False,
+            meta={"is_email": payload.email is not None},
+            # last_login_at=datetime.now(UTC)
         )
-        user.providers.append(auth)
+        user.identities.append(identity)
         await self.user_repo.add(user)
         
         try:
             await self.uow.session.flush()
-        except IntegrityError:
+        except IntegrityError as e:
             raise AlreadyExists()
         
         session_id = await self.session_service.create_session(user.id, ttl)
-        request.session['session_id'] = session_id
+        self.request.session['session_id'] = session_id
         
         return user
     
     
-    async def login(self, request: Request, payload: UserLogin, ttl: int) -> User:
+    async def login(self, payload: UserLogin, ttl: int) -> User:
         identifier = payload.email or payload.phone_number
-        result = await self.creds_repo.get_user_and_password(identifier)
+        result = await self.identity_repo.get_user_and_secret(identifier)
         if result is None:
             raise WrongCredentials()
         
@@ -93,12 +93,18 @@ class CredentialsService:
             raise WrongCredentials()
         
         session_id = await self.session_service.create_session(user.id, ttl)
-        request.session['session_id'] = session_id
+        self.request.session['session_id'] = session_id
         
         return user
     
     
-    async def logout(self, request: Request) -> None:
-        session_id = request.session['session_id']
+    async def logout(self) -> None:
+        session_id = self.request.session['session_id']
         
         await self.session_service.revoke_session(session_id)
+
+
+    async def link(self, identifier: str, user: User) -> None:
+        result = await self.identity_repo.find_by_user_id(user.id)
+        if result is None:
+            raise NotAuthenticated

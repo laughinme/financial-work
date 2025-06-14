@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.create_table('auth_providers',
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('provider', sa.Enum('CREDENTIALS', 'TELEGRAM', 'GOOGLE', name='provider'), nullable=False),
+    sa.Column('provider', sa.Enum('PASSWORD', 'TELEGRAM', 'GOOGLE', name='provider'), nullable=False),
     sa.Column('provider_user_id', sa.String(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),

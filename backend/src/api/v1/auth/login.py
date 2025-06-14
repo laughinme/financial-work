@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 
 from core.config import Config
 from core.security import auth_user
@@ -17,11 +17,10 @@ router = APIRouter()
     responses={401: {"description": "Wrong credentials"}}
 )
 async def login_user(
-    request: Request,
     payload: UserLogin,
-    creds_service: CredentialsService = Depends(get_credentials_service)
+    creds_service: Annotated[CredentialsService, Depends(get_credentials_service)]
 ) -> UserSchema:
-    user = await creds_service.login(request, payload, config.SESSION_LIFETIME)
+    user = await creds_service.login(payload, config.SESSION_LIFETIME)
     return user
 
 
@@ -31,8 +30,7 @@ async def login_user(
     responses={401: {"description": "Not authorized"}}
 )
 async def logout(
-    request: Request,
     creds_service: Annotated[CredentialsService, Depends(get_credentials_service)],
     _: Annotated[User, Depends(auth_user)]
 ) -> None:
-    await creds_service.logout(request)
+    await creds_service.logout()

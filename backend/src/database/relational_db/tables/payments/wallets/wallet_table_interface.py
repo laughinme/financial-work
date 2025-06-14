@@ -12,6 +12,10 @@ class WalletInterface:
         self.session = session
         
     
+    async def add(self, obj: Wallet) -> None:
+        await self.session.add(obj)
+        
+    
     async def credit(
         self,
         user_id: UUID,

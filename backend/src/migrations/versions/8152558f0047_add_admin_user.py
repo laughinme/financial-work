@@ -1,8 +1,8 @@
 """Add admin user
 
-Revision ID: 2bd88bf14230
-Revises: fbb5307d28a7
-Create Date: 2025-06-13 23:21:28.408183
+Revision ID: 8152558f0047
+Revises: ef8b2f956fae
+Create Date: 2025-06-15 00:29:25.087963
 
 """
 from typing import Sequence, Union
@@ -11,11 +11,12 @@ from alembic import op
 import sqlalchemy as sa
 import uuid
 import bcrypt
+from datetime import datetime, UTC
 
 
 # revision identifiers, used by Alembic.
-revision: str = '2bd88bf14230'
-down_revision: Union[str, None] = 'fbb5307d28a7'
+revision: str = '8152558f0047'
+down_revision: Union[str, None] = 'ef8b2f956fae'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -26,10 +27,11 @@ def upgrade() -> None:
     admin_id = uuid.UUID('11111111-1111-1111-1111-111111111111')
     user_insert_sql = """
         INSERT INTO users (
-            id, secure_code, display_name, first_name, last_name, avatar_url, role
+            id, secure_code, display_name, first_name, last_name, avatar_url, role,
+            allow_password_login, banned
         ) VALUES (
             :id, :secure_code, :display_name, :first_name, :last_name, :avatar_url,
-            CAST(:role AS role)
+            CAST(:role AS role), TRUE, FALSE
         );
     """
     op.execute(
@@ -43,26 +45,26 @@ def upgrade() -> None:
             role="ADMIN",
         )
     )
-    # Add credentials for admin user
+    # Add credentials identity for admin user
     hashed_password = bcrypt.hashpw(b'adminpassword', bcrypt.gensalt()).decode()
-    creds_sql = """
-        WITH new_auth AS (
-            INSERT INTO auth_providers (user_id, provider, provider_user_id)
-            VALUES (:user_id, CAST(:provider AS provider), :provider_user_id)
-            RETURNING id
-        )
-        INSERT INTO credentials_providers (id, is_email, password, is_verified)
-        SELECT id, TRUE, :password, FALSE FROM new_auth;
+    identity_sql = """
+        INSERT INTO identities (
+            id, user_id, provider, external_id, secret_hash, verified, meta
+        ) VALUES (
+            :id, :user_id, CAST(:provider AS provider), :external_id, :secret, FALSE,
+            '{"is_email": true}'::jsonb
+        );
     """
     op.execute(
-        sa.text(creds_sql).bindparams(
+        sa.text(identity_sql).bindparams(
+            id=uuid.uuid4(),
             user_id=admin_id,
-            provider="CREDENTIALS",
-            provider_user_id="admin@example.com",
-            password=hashed_password,
+            provider="PASSWORD",
+            external_id="admin@example.com",
+            secret=hashed_password,
+            # last_login_at=datetime.now(UTC)
         )
     )
-    # ### end Alembic commands ###
 
 
 def downgrade() -> None:
@@ -70,7 +72,10 @@ def downgrade() -> None:
     # Remove admin user
     admin_id = uuid.UUID('11111111-1111-1111-1111-111111111111')
     op.execute(
+        sa.text("DELETE FROM identities WHERE user_id = :id"),
+        {"id": admin_id}
+    )
+    op.execute(
         sa.text("DELETE FROM users WHERE id = :id"),
         {"id": admin_id}
     )
-    # ### end Alembic commands ###

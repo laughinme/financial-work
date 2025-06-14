@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import UUID, String, Enum
+from sqlalchemy import UUID, String, Enum, Boolean
 
 from domain.users import Role
 from ..table_base import Base
@@ -19,8 +19,10 @@ class User(TimestampMixin, Base):
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
     
     role: Mapped[Role] = mapped_column(Enum(Role), nullable=False, default=Role.GUEST)
-    
-    providers: Mapped[list["AuthProvider"]] = relationship( # type: ignore
+    allow_password_login: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    banned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    identities: Mapped[list["Identity"]] = relationship(  # type: ignore
         back_populates="user", cascade="all, delete-orphan"
     )
     holdings = relationship("Holding", back_populates="user", lazy="selectin")
