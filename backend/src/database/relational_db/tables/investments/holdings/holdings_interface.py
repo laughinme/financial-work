@@ -210,7 +210,7 @@ class HoldingsInterface:
         return dict(mapping)
 
 
-    async def allocation(self, user_id: UUID):
+    async def allocation(self, user_id: UUID) -> list:
         total_sub = (
             select(func.coalesce(func.sum(Holding.current_value), 1).label('total'))
             .where(Holding.user_id == user_id)

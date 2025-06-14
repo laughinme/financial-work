@@ -1,7 +1,9 @@
 from uuid import UUID
-from sqlalchemy import select
+from datetime import date, timedelta
+from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from domain.payments import TransactionType
 from .transactions_table import Transaction
 
 
@@ -47,3 +49,29 @@ class TransactionInterface:
         transactions = result.all()
         
         return transactions
+    
+    
+    async def cash_flow(self, user_id: UUID, days: int):
+        start = date.today() - timedelta(days=days)
+
+        day = func.date_trunc("day", Transaction.created_at)
+        query = (
+            select(
+                day.label("date"),
+                func.sum(
+                    case((Transaction.type == TransactionType.DEPOSIT, Transaction.amount), else_=0)
+                ).label("deposits"),
+                func.sum(
+                    case((Transaction.type == TransactionType.WITHDRAW, Transaction.amount), else_=0)
+                ).label("withdrawals"),
+            )
+            .where(
+                Transaction.user_id == user_id,
+                Transaction.created_at >= start,
+            )
+            .group_by(day)
+            .order_by(day)
+        )
+        result = await self.session.execute(query)
+        
+        return result.mappings().all()

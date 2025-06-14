@@ -1,2 +1,2 @@
 from .summary import DashboardSchema
-from .charts import AllocationPie
+from .charts import AllocationPie, CashFlow

@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from decimal import Decimal
+from datetime import datetime
 
 
 class AllocationPie(BaseModel):
@@ -10,3 +11,13 @@ class AllocationPie(BaseModel):
     amount: Decimal = Field(..., alias='current_value', description='Absolute amount')
     share: Decimal = Field(..., description="User's holding share")
     percentage: Decimal = Field(..., description="User's share in percents")
+
+
+class CashFlow(BaseModel):
+    date: datetime
+    deposit: Decimal = Field(
+        ..., alias="deposits", description='Sum of deposits for current date'
+    )
+    withdraw: Decimal = Field(
+        ..., alias="withdrawals", description='Sum of withdrawals for current date'
+    )
