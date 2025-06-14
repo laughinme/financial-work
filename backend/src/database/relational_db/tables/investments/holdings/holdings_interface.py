@@ -208,3 +208,27 @@ class HoldingsInterface:
         mapping = result.mappings().first() or {}
 
         return dict(mapping)
+
+
+    async def allocation(self, user_id: UUID):
+        total_sub = (
+            select(func.coalesce(func.sum(Holding.current_value), 1).label('total'))
+            .where(Holding.user_id == user_id)
+            .subquery()
+        )
+        
+        query = (
+            select(
+                Portfolio.id,
+                Portfolio.name,
+                Holding.current_value,
+                (Holding.current_value / total_sub.c.total).label('share'),
+                (Holding.current_value / total_sub.c.total * 100).label('percentage')
+            )
+            .join(Holding, Portfolio.id == Holding.portfolio_id)
+            .where(Holding.user_id == user_id)
+        )
+        result = await self.session.execute(query)
+        holdings = result.mappings().all()
+        
+        return holdings
