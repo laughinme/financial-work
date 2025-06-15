@@ -1,8 +1,8 @@
-"""Add admin user
+"""add admin user
 
-Revision ID: 8152558f0047
-Revises: ef8b2f956fae
-Create Date: 2025-06-15 00:29:25.087963
+Revision ID: df017e52296d
+Revises: 34b6c15d6bd1
+Create Date: 2025-06-16 01:55:44.962347
 
 """
 from typing import Sequence, Union
@@ -15,8 +15,8 @@ from datetime import datetime, UTC
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8152558f0047'
-down_revision: Union[str, None] = 'ef8b2f956fae'
+revision: str = 'df017e52296d'
+down_revision: Union[str, None] = '34b6c15d6bd1'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -28,10 +28,10 @@ def upgrade() -> None:
     user_insert_sql = """
         INSERT INTO users (
             id, secure_code, display_name, first_name, last_name, avatar_url, role,
-            allow_password_login, banned
+            allow_password_login, banned, stripe_onboarding_completed
         ) VALUES (
             :id, :secure_code, :display_name, :first_name, :last_name, :avatar_url,
-            CAST(:role AS role), TRUE, FALSE
+            CAST(:role AS role), TRUE, FALSE, FALSE
         );
     """
     op.execute(

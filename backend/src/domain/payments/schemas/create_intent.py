@@ -5,7 +5,7 @@ from decimal import Decimal
 from ..enums import DepositAction
 
 
-class CreatePaymentSchema(BaseModel):
+class CreatePayment(BaseModel):
     amount: Decimal = Field(..., description='Required payment amount in double format (100.00)')
     currency: str = Field(
         'USD', description='Only USD is allowed'
@@ -30,3 +30,7 @@ class CreatePaymentSchema(BaseModel):
         if self.currency != 'USD':
             raise ValueError('Only USD is allowed')
         return self
+
+
+class CreatePayout(BaseModel):
+    amount: Decimal = Field(..., description='Amount of funds to withdraw in USD')

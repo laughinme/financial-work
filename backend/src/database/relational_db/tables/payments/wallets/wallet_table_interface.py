@@ -1,6 +1,6 @@
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import update
+from sqlalchemy import update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 
@@ -14,6 +14,16 @@ class WalletInterface:
     
     async def add(self, obj: Wallet) -> None:
         await self.session.add(obj)
+        
+        
+    async def get_for_user(self, user_id: UUID) -> Wallet:
+        return await self.session.scalar(
+            select(Wallet)
+            .where(
+                Wallet.user_id == user_id,
+                Wallet.currency == 'USD'
+            )
+        )
         
     
     async def credit(

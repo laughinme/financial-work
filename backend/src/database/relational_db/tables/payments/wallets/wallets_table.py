@@ -15,7 +15,7 @@ class Wallet(Base):
         UUID(as_uuid=True), ForeignKey('users.id', ondelete='RESTRICT'), primary_key=True
     )
     
-    currency: Mapped[str] = mapped_column(CHAR(3), primary_key=True)
+    currency: Mapped[str] = mapped_column(CHAR(3), primary_key=True, default='USD')
     balance: Mapped[Decimal] = mapped_column(DECIMAL(18,2), default=Decimal('0'), nullable=False)
     locked: Mapped[Decimal] = mapped_column(DECIMAL(18,2), default=Decimal('0'), nullable=False)
     

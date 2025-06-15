@@ -25,4 +25,7 @@ async def get_onboarding_link(
         user.stripe_account_id
     )
     
+    # For test, instead of webhook we'll just set it here
+    user.stripe_onboarding_completed = True
+    
     return url

@@ -14,7 +14,7 @@ from database.relational_db import (
     TransactionInterface, 
     WalletInterface
 )
-from domain.payments import PaymentStatus, PaymentProvider, CreatePaymentSchema, TransactionType, DepositAction
+from domain.payments import PaymentStatus, PaymentProvider, CreatePayment, TransactionType, DepositAction
 from service.investments import InvestmentService
 from core.config import Config
 from .exceptions import PaymentFailed, UnsupportedEvent
@@ -41,7 +41,7 @@ class YooKassaService:
         self.invest_service = invest_service
 
 
-    async def create_payment(self, payload: CreatePaymentSchema, user: User):
+    async def create_payment(self, payload: CreatePayment, user: User):
         intent = PaymentIntent(
             user_id=user.id,
             amount=payload.amount,
@@ -76,7 +76,7 @@ class YooKassaService:
 
 
     @staticmethod
-    def _create_payment(payload: CreatePaymentSchema, metadata: dict = {}):
+    def _create_payment(payload: CreatePayment, metadata: dict = {}):
         return yookassa.Payment.create(
         {
             "amount": {

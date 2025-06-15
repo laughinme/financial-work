@@ -13,7 +13,7 @@ from database.relational_db import (
     TransactionInterface,
     WalletInterface,
 )
-from domain.payments import PaymentStatus, PaymentProvider, CreatePaymentSchema, TransactionType, DepositAction
+from domain.payments import PaymentStatus, PaymentProvider, CreatePayment, TransactionType, DepositAction
 from service.investments import InvestmentService
 from core.config import Config
 from .exceptions import PaymentFailed, UnsupportedEvent, NoUSDWallet, PaymentSystemException
@@ -43,7 +43,9 @@ class StripeService:
         )
         self.invest_service = invest_service
 
-    async def create_payment(self, payload: CreatePaymentSchema, user: User):
+    async def create_payment(
+        self, payload: CreatePayment, user: User
+    ) -> stripe.checkout.Session:
         intent = PaymentIntent(
             user_id=user.id,
             amount=payload.amount,
@@ -67,15 +69,20 @@ class StripeService:
                 StripeService._create_session, payload, metadata
             )
             intent.provider_payment_id = session.id
-            return session.url
-        except Exception:
+            return session
+        except Exception as e:
+            print(e)
             await self.uow.session.rollback()
             intent.status = PaymentStatus.FAILED
             raise PaymentFailed()
 
     @staticmethod
-    def _create_session(payload: CreatePaymentSchema, metadata: dict):
-        return stripe.checkout.Session.create(
+    def _create_session(
+        payload: CreatePayment, metadata: dict
+    ) -> stripe.checkout.Session:
+        amount_cents = int(payload.amount * 100)
+        fee_cents = int((amount_cents + 30) / 0.971) - amount_cents
+        session = stripe.checkout.Session.create(
             mode="payment",
             payment_method_types=["card"],
             line_items=[
@@ -83,15 +90,26 @@ class StripeService:
                     "price_data": {
                         "currency": "usd",
                         "product_data": {"name": payload.description or "Deposit"},
-                        "unit_amount": int(payload.amount * 100),
+                        "unit_amount": amount_cents,
                     },
                     "quantity": 1,
-                }
+                },
+                {
+                    "price_data": {
+                        "product_data": {"name": "Processing fee"},
+                        "currency": "usd",
+                        "unit_amount": fee_cents
+                    },
+                    "quantity": 1
+             },
             ],
             metadata=metadata,
             success_url=config.SITE_URL,
             cancel_url=config.SITE_URL,
         )
+        
+        return session
+
 
     async def process_payment(self, body: dict):
         event_type = body.get("type")
@@ -163,26 +181,6 @@ class StripeService:
                 return wallet.amount
         else:
             raise NoUSDWallet
-        
-        
-    @staticmethod
-    async def _create_payout(amount: Decimal) -> stripe.Payout:
-       return await asyncio.to_thread(
-            stripe.Payout.create(
-                amount=amount, currency="usd", description='Payout to bank account'
-            )
-        )
-    
-    async def create_payout(self, amount: Decimal) -> stripe.Payout:
-        try:
-            balance = await asyncio.to_thread(self._retrieve_balance)
-        except NoUSDWallet:
-            raise PaymentSystemException
-        
-        logger.info('amount: %s', amount)
-        logger.info('balance: %s', balance)
-        payout = await self._create_payout(int(amount))
-        return payout
 
 
     @staticmethod
@@ -217,7 +215,7 @@ class StripeService:
             metadata={"platform_user_id": str(user.id)}
         )
 
-        user.stripe_account_id = account.get('id')
+        user.stripe_account_id = account.id
         return account
 
 
@@ -250,3 +248,42 @@ class StripeService:
         return await asyncio.to_thread(
             self._create_account_link, account_id
         )
+
+
+    @staticmethod
+    def _create_transfer(amount: Decimal, account_id: str):
+        transfer = stripe.Transfer.create(
+          amount=int(amount * 100),
+          currency="usd",
+          destination=account_id
+        )
+        
+        return transfer
+    
+    
+    async def create_transfer(self, amount: Decimal, account_id: str):
+        return await asyncio.to_thread(
+            self._create_transfer, amount, account_id
+        )
+        
+    
+    @staticmethod
+    def _create_payout_connect(amount: Decimal, account_id: str) -> stripe.Payout:
+        payout = stripe.Payout.create(
+            amount=int(amount * 100),
+            currency="usd",
+            stripe_account=account_id,
+        )
+        return payout
+
+    
+    async def create_payout_connect(self, amount: Decimal, account_id: str) -> stripe.Payout:
+        # try:
+        #     balance = await asyncio.to_thread(self._retrieve_balance)
+        # except NoUSDWallet:
+        #     raise PaymentSystemException
+        
+        payout = await asyncio.to_thread(
+            self._create_payout_connect, amount, account_id
+        )
+        return payout

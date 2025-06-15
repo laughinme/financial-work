@@ -24,6 +24,7 @@ class User(TimestampMixin, Base):
     
     stripe_account_id: Mapped[str | None] = mapped_column(String, nullable=True)
     stripe_customer_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    stripe_onboarding_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     identities: Mapped[list["Identity"]] = relationship(  # type: ignore
         back_populates="user", cascade="all, delete-orphan"
@@ -31,4 +32,4 @@ class User(TimestampMixin, Base):
     holdings = relationship("Holding", back_populates="user", lazy="selectin")
     unit_issues = relationship("UnitIssue", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")
-    wallets = relationship('Wallet', back_populates='user')
+    wallets: Mapped[list["Wallet"]] = relationship(back_populates='user') # type: ignore

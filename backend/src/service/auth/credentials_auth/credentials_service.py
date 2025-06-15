@@ -13,6 +13,7 @@ from database.relational_db import (
     IdentityInterface,
     Identity,
     UoW,
+    Wallet
 )
 from domain.users import Provider, UserRegister, UserLogin
 from core.config import Config
@@ -64,6 +65,10 @@ class CredentialsService:
             # last_login_at=datetime.now(UTC)
         )
         user.identities.append(identity)
+        
+        wallet = Wallet(currency='USD')
+        user.wallets.append(wallet)
+        
         await self.user_repo.add(user)
         
         try:
