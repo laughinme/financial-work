@@ -1,33 +1,83 @@
 // src/App.jsx
-import React           from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React                   from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
-import DashboardPage   from "./mainpage/dashboard";
-import PortfolioPage   from "./mainpage/components/portfolio";
-import StrategyPage    from "./mainpage/components/StrategyPortfolioPage";
-import AdminPage       from "./admin/AdminPage";
-
+import DashboardPage     from "./mainpage/dashboard";
+import PortfolioPage     from "./mainpage/components/portfolio";
+import StrategyPage      from "./mainpage/components/StrategyPortfolioPage";
+import AdminPage         from "./admin/AdminPage";
 import { PortfolioProvider } from "./contexts/PortfolioContext";
 
-/** При открытии root-URL выбираем нужную стартовую страницу. */
-function RootRedirect() {
-  const email   = localStorage.getItem("currentEmail");
-  const isAdmin = email === "admin@example.com";
-  return <Navigate to={isAdmin ? "/admin" : "/dashboard"} replace />;
+/* ─── helpers ─────────────────────────────────────────────────────────── */
+const isAdmin = () => localStorage.getItem("currentEmail") === "admin@example.com";
+
+/* страницы, запрещённые админу */
+function UserOnly({ children }) {
+  if (isAdmin()) return <Navigate to="/admin" replace />;
+  return children;
 }
 
+/* страница, доступная только админу */
+function AdminOnly({ children }) {
+  if (!isAdmin()) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
+/* куда вести при открытии root-URL */
+function RootRedirect() {
+  return <Navigate to={isAdmin() ? "/admin" : "/dashboard"} replace />;
+}
+
+/* ─── App ─────────────────────────────────────────────────────────────── */
 export default function App() {
   return (
     <PortfolioProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/"              element={<RootRedirect />} />
-          <Route path="/dashboard"     element={<DashboardPage />} />
-          <Route path="/portfolio"     element={<PortfolioPage />} />
-          <Route path="/portfolio/:id" element={<StrategyPage />} />
-          <Route path="/admin"         element={<AdminPage />} />
+          <Route path="/" element={<RootRedirect />} />
 
-          {/* всё остальное ведём на / */}
+          {/* admin area */}
+          <Route
+            path="/admin"
+            element={
+              <AdminOnly>
+                <AdminPage />
+              </AdminOnly>
+            }
+          />
+
+          {/* user area */}
+          <Route
+            path="/dashboard"
+            element={
+              <UserOnly>
+                <DashboardPage />
+              </UserOnly>
+            }
+          />
+          <Route
+            path="/portfolio"
+            element={
+              <UserOnly>
+                <PortfolioPage />
+              </UserOnly>
+            }
+          />
+          <Route
+            path="/portfolio/:id"
+            element={
+              <UserOnly>
+                <StrategyPage />
+              </UserOnly>
+            }
+          />
+
+          {/* всё остальное → / */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

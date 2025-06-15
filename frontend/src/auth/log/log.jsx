@@ -1,15 +1,16 @@
+
 import React, { useState, useEffect } from "react";
 import { FiEye, FiEyeOff }            from "react-icons/fi";
 import "../log/log.css";
 
 import { findUser, createUser, setCurrent } from "../storage";
-import { linkTelegram } from "../../api/users";
-import { login as loginApi } from "../../api/auth";
+import { linkTelegram }                      from "../../api/users";
+import { login as loginApi }                 from "../../api/auth";
 
 export default function Log({ onSwitch, onReset }) {
-  const [email,    setEmail] = useState("");
-  const [password, setPass]  = useState("");
-  const [showPass, setShow]  = useState(false);
+  const [email,    setEmail]    = useState("");
+  const [password, setPassword] = useState("");
+  const [showPass, setShow]     = useState(false);
 
   /* ───── Telegram-виджет ───── */
   useEffect(() => {
@@ -24,10 +25,10 @@ export default function Log({ onSwitch, onReset }) {
     const script = document.createElement("script");
     script.async = true;
     script.src   = "https://telegram.org/js/telegram-widget.js?22";
-    script.setAttribute("data-telegram-login", "niperybot");
-    script.setAttribute("data-size",           "large");
-    script.setAttribute("data-onauth",         "onTelegramAuth(user)");
-    script.setAttribute("data-request-access", "write");
+    script.setAttribute("data-telegram-login",    "niperybot");
+    script.setAttribute("data-size",               "large");
+    script.setAttribute("data-onauth",             "onTelegramAuth(user)");
+    script.setAttribute("data-request-access",     "write");
 
     const container = document.getElementById("telegram-login-button");
     if (container) container.appendChild(script);
@@ -43,17 +44,22 @@ export default function Log({ onSwitch, onReset }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await loginApi(email, password);              
+      await loginApi(email, password);
+
       if (!findUser(email)) createUser(email, password);
       setCurrent(email);
       localStorage.setItem("currentEmail", email);
-      window.location.href = "/main.html#/dashboard";
+
+      if (email === "admin@example.com") {
+        window.location.href = "/admin";
+      } else {
+        window.location.href = "/main.html#/dashboard";
+      }
     } catch {
       alert("Wrong email / password");
     }
   };
 
-  /* ───── разметка ───── */
   return (
     <form className="login-card" onSubmit={handleSubmit}>
       <h1 className="form-title">Log in</h1>
@@ -77,7 +83,7 @@ export default function Log({ onSwitch, onReset }) {
           type={showPass ? "text" : "password"}
           placeholder="••••••••••"
           value={password}
-          onChange={(e) => setPass(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
         <button
@@ -115,4 +121,3 @@ export default function Log({ onSwitch, onReset }) {
     </form>
   );
 }
-   
