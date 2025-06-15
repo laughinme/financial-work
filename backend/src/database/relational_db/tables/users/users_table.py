@@ -21,6 +21,9 @@ class User(TimestampMixin, Base):
     role: Mapped[Role] = mapped_column(Enum(Role), nullable=False, default=Role.GUEST)
     allow_password_login: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     banned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    
+    stripe_account_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    stripe_customer_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     identities: Mapped[list["Identity"]] = relationship(  # type: ignore
         back_populates="user", cascade="all, delete-orphan"
