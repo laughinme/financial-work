@@ -1,48 +1,59 @@
-import React from 'react';
+import React from "react";
+import dayjs from "dayjs";
 import {
   ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
   CartesianGrid,
-} from 'recharts';
+  Tooltip,
+  Cell,
+} from "recharts";
+
+const formatDate = (d) => dayjs(d).format("DD MMM");
 
 export default function DrawdownChart({ data }) {
-  if (!data || data.length === 0) return null;
+  if (!Array.isArray(data) || data.length === 0) return null;
 
   return (
-    <ResponsiveContainer width="100%" height={180}>
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 6 }}>
+        <CartesianGrid stroke="#E5E7EB" strokeDasharray="3 3" />
 
         <XAxis
           dataKey="date"
-          stroke="#6B7280"
+          tickFormatter={formatDate}
           tick={{ fontSize: 11 }}
+          stroke="#6B7280"
           tickLine={false}
+          axisLine={{ stroke: "#D1D5DB" }}
+          interval="preserveStartEnd"
         />
-
-       
         <YAxis
-          domain={['dataMin', 'dataMax']}
-          stroke="#6B7280"
+          domain={["dataMin", "dataMax"]}
           tick={{ fontSize: 11 }}
+          stroke="#6B7280"
           tickLine={false}
+          axisLine={{ stroke: "#D1D5DB" }}
         />
 
         <Tooltip
-          formatter={(v) => v + '%'}
+          formatter={(v) => v + "%"}
+          labelFormatter={(v) => `Дата: ${formatDate(v)}`}
           contentStyle={{
-            background: '#fff',
-            border: '1px solid #E5E7EB',
+            background: "#ffffff",
+            border: "1px solid #E5E7EB",
             borderRadius: 4,
             fontSize: 12,
           }}
         />
 
-        <Bar dataKey="drawdown" fill="#EF4444" isAnimationActive={false} />
+        <Bar dataKey="drawdown" isAnimationActive={true}>
+          {data.map((_, i) => (
+            <Cell key={i} fill="#EF4444" />
+          ))}
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
