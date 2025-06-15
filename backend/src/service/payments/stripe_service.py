@@ -183,3 +183,70 @@ class StripeService:
         logger.info('balance: %s', balance)
         payout = await self._create_payout(int(amount))
         return payout
+
+
+    @staticmethod
+    def _create_connected_account(user: User) -> stripe.Account:
+        if user.stripe_account_id:
+            return stripe.Account.retrieve(user.stripe_account_id)
+
+        account = stripe.Account.create(
+            # type="custom",
+            business_type="individual",
+            controller={
+                "stripe_dashboard": {
+                "type": "none",
+                },
+                "fees": {
+                "payer": "application"
+                },
+                "losses": {
+                "payments": "application"
+                },
+                "requirement_collection": "application",
+            },
+            # individual={
+            #     "first_name": user.first_name,
+            #     "last_name":  user.last_name,
+            #     "email":      user.email,
+            # },
+            capabilities={
+                "transfers": {"requested": True},
+                # "card_payments": {"requested": True},
+            },
+            metadata={"platform_user_id": str(user.id)}
+        )
+
+        user.stripe_account_id = account.get('id')
+        return account
+
+
+    async def connected_account(self, user: User):
+        """
+        Creates or retrieves a connected account.
+        """
+        
+        return await asyncio.to_thread(
+            self._create_connected_account, user
+        )
+
+    
+    @staticmethod
+    def _create_account_link(account_id: str) -> stripe.AccountLink:
+        """
+        Generates one-time URL that sends the user to Stripe-hosted onboarding.
+        """
+        link = stripe.AccountLink.create(
+            account=account_id,
+            type="account_onboarding",
+            refresh_url=config.SITE_URL,
+            return_url=config.SITE_URL,
+            collection_options={"fields": "eventually_due"},
+        )
+        return link
+    
+    
+    async def create_account_link(self, account_id: str) -> str:
+        return await asyncio.to_thread(
+            self._create_account_link, account_id
+        )
