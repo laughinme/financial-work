@@ -1,14 +1,15 @@
 from decimal import Decimal
-from datetime import datetime, UTC
+from datetime import datetime, UTC, date as date_
 from uuid import UUID
 from datetime import timedelta, date
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, and_
 from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import array_agg, insert
 
 from domain.payments import TransactionType
 from .user_holdings_table import Holding
+from .holdings_history import HoldingHistory
 from ..portfolios import Portfolio, PortfolioSnapshot
 from ...payments import Transaction
 
@@ -16,6 +17,33 @@ from ...payments import Transaction
 class HoldingsInterface:
     def __init__(self, session: AsyncSession):
         self.session = session
+        
+        
+    async def insert_snapshot(self, holding: Holding):
+        query = (
+            insert(HoldingHistory)
+            .values(
+                user_id=holding.user_id,
+                portfolio_id=holding.portfolio_id,
+                date=date_.today(),
+                units=holding.units,
+                total_deposit=holding.total_deposit,
+                total_withdraw=holding.total_withdraw,
+                current_value=holding.current_value,
+                pnl=holding.pnl
+            )
+            .on_conflict_do_update(
+                constraint='uq_holding_history',
+                set_={
+                    "units": holding.units,
+                    "total_deposit": holding.total_deposit,
+                    "total_withdraw": holding.total_withdraw,
+                    "current_value": holding.current_value,
+                    "pnl": holding.pnl
+                }
+            )
+        )
+        await self.session.execute(query)
         
     
     async def revalue_holdings(self):
@@ -25,6 +53,7 @@ class HoldingsInterface:
             .with_for_update(skip_locked=True)
         )
         
+        snap_rows = []
         tx_batch = []
         for holding, nav_price in rows:
             new_val = (holding.units * nav_price).quantize(Decimal("0.00000001"))
@@ -34,6 +63,19 @@ class HoldingsInterface:
 
             holding.current_value = new_val
             holding.pnl = new_val - holding.total_deposit + holding.total_withdraw
+            
+            snap_rows.append(
+                dict(
+                    user_id = holding.user_id,
+                    portfolio_id = holding.portfolio_id,
+                    date = date_.today(),
+                    units = holding.units,
+                    total_deposit = holding.total_deposit,
+                    total_withdraw = holding.total_withdraw,
+                    current_value = holding.current_value,
+                    pnl = holding.pnl,
+                )
+            )
 
             tx_batch.append(
                 Transaction(
@@ -45,6 +87,21 @@ class HoldingsInterface:
                     comment = "Mark to Market revaluation"
                 )
             )
+            
+        if snap_rows:
+            query = insert(HoldingHistory).values(snap_rows)
+            query = query.on_conflict_do_update(
+                    constraint="uq_holding_history",
+                    set_={
+                        "units": query.excluded.units,
+                        "total_deposit": query.excluded.total_deposit,
+                        "total_withdraw": query.excluded.total_withdraw,
+                        "current_value": query.excluded.current_value,
+                        "pnl": query.excluded.pnl,
+                        "updated_at": datetime.now(UTC),
+                    }
+                )
+            await self.session.execute(query)
 
         if tx_batch:
             self.session.add_all(tx_batch)
@@ -242,16 +299,18 @@ class HoldingsInterface:
         start = date.today() - timedelta(days=days)
 
         Snap = aliased(PortfolioSnapshot)
+        Units = aliased(HoldingHistory)
         query = (
             select(
                 Snap.snapshot_date.label("day"),
-                func.sum(Holding.units * Snap.nav_price).label("equity")
+                func.sum(Units.units * Snap.nav_price).label("equity")
             )
-            .join(Holding, Holding.portfolio_id == Snap.portfolio_id)
-            .where(
-                Holding.user_id == user_id,
-                Snap.snapshot_date >= start
-            )
+            .join(Units, and_(
+                Units.portfolio_id == Snap.portfolio_id,
+                Units.date == Snap.snapshot_date,
+                Units.user_id == user_id
+            ))
+            .where(Snap.snapshot_date >= start)
             .group_by(Snap.snapshot_date)
             .order_by(Snap.snapshot_date)
         )
