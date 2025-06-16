@@ -109,7 +109,7 @@ class PortfolioInterface:
         
     async def get_snapshot_history(
         self, portfolio_id: int, days: int
-    ) -> list[tuple[date, Decimal, Decimal, Decimal]]:
+    ) -> tuple[list[dict], list[dict]]:
         query = (
             select(
                 PortfolioSnapshot.snapshot_date,

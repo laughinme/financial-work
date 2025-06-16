@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from decimal import Decimal
 
 
-class DashboardSchema(BaseModel):
+class Dashboard(BaseModel):
     """Aggregated information about user's portfolios."""
 
     total_equity: Decimal = Field(..., description="Total equity of all portfolios")

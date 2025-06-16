@@ -20,7 +20,7 @@ config = Config()
 
 
 class MyFXService:
-    BASE_URL = 'https://www.myfxbook.com/api'
+    BASE_URL = config.MOCK_URL
     
     def __init__(
         self,
@@ -122,7 +122,8 @@ class MyFXService:
     ) -> DailyGainSchema:
         cache_key = f'myfx:daily_gain:{account_id}:{start}:{end}'
         if raw := await self.cache_repo.get(cache_key):
-            return DailyGainSchema.model_validate_json(raw)
+            # return DailyGainSchema.model_validate_json(raw)
+            pass
             
         session = await self._get_session()
         data = await self._call(

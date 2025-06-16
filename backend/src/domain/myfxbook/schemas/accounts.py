@@ -20,7 +20,7 @@ class AccountSchema(BaseModel):
     abs_gain: Decimal = Field(..., alias='absGain', description="Absolute gain in percent")
     daily: Decimal = Field(..., description="Daily performance")
     monthly: Decimal = Field(..., description="Monthly performance")
-    withdrawals: int = Field(..., description="Number of withdrawals")
+    withdrawals: Decimal = Field(..., description="Number of withdrawals")
     deposits: Decimal = Field(..., description="Total deposits")
     interest: Decimal = Field(..., description="Interest received")
     profit: Decimal = Field(..., description="Total profit")
