@@ -9,12 +9,10 @@ class DashboardService:
     def __init__(
         self,
         uow: UoW,
-        p_repo: PortfolioInterface,
         h_repo: HoldingsInterface,
         tx_repo: TransactionInterface
     ):
         self.uow = uow
-        self.p_repo = p_repo
         self.h_repo = h_repo
         self.tx_repo = tx_repo
 

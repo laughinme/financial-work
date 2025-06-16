@@ -13,6 +13,6 @@ ENV PYTHONPATH=/app/src
 
 RUN chmod +x entry.sh
 
-EXPOSE 8000
+EXPOSE 8001
 
 ENTRYPOINT ["./entry.sh"]
