@@ -48,7 +48,7 @@ const NoData = ({ h = 240 }) => (
   </div>
 );
 
-/* ─── Мини-спарклайн в таблице ──────────────────────────────────────────── */
+/* ─── Мини-спарклайн в таблице ─────────────────────────────────────────── */
 function SparkMini({ data, onClick }) {
   if (!data || data.length === 0) return null;
   return (
@@ -60,7 +60,7 @@ function SparkMini({ data, onClick }) {
   );
 }
 
-/* ─── Модальное окно с большим графиком ─────────────────────────────────── */
+/* ─── Модальное окно с большим графиком ────────────────────────────────── */
 function SparkModal({ open, onClose, data, title }) {
   if (!open) return null;
   return (
@@ -82,7 +82,7 @@ function SparkModal({ open, onClose, data, title }) {
   );
 }
 
-/* ─── Component ─────────────────────────────────────────────────────────── */
+/* ─── Component ────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const navigate = useNavigate();
 
@@ -167,7 +167,7 @@ export default function DashboardPage() {
         <Sidebar />
 
         <main className="main-content">
-          {/* HEADER */}
+          {/* ─── HEADER ─────────────────────────────────────────────── */}
           <header className="dash-header">
             <div className="logo-circle" />
 
@@ -199,7 +199,7 @@ export default function DashboardPage() {
             </button>
           </header>
 
-          {/* KPI GRID */}
+          {/* ─── KPI GRID ──────────────────────────────────────────── */}
           <section className="kpi-grid">
             <div className="kpi-card">
               <p>Total P/L</p>
@@ -223,7 +223,7 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* MAIN CHARTS */}
+          {/* ─── MAIN CHARTS ───────────────────────────────────────── */}
           <section className="charts">
             {/* Portfolio Value */}
             <div className="chart large">
@@ -235,7 +235,13 @@ export default function DashboardPage() {
                     <XAxis dataKey="date" stroke="#6B7280" tick={{ fontSize: 12 }} />
                     <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, "auto"]} />
                     <Tooltip formatter={(v) => "$" + (+v).toLocaleString()} />
-                    <Line type="monotone" dataKey="balance" stroke="#2563EB" strokeWidth={2} dot={false} />
+                    <Line
+                      type="monotone"
+                      dataKey="balance"
+                      stroke="#2563EB"
+                      strokeWidth={2}
+                      dot={false}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
@@ -321,21 +327,30 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* PORTFOLIOS YOU HOLD & TRANSACTIONS */}
+          {/* ─── PORTFOLIOS YOU HOLD & TRANSACTIONS ────────────────── */}
           <section className="bottom-row">
             {/* Portfolios You Hold */}
             <div className="portfolios-block">
               <h2 className="section-title">Portfolios You Hold</h2>
               {invested.length ? (
                 <table className="dash-table">
+            
+                  <colgroup>
+                    <col style={{ width: "40%" }} /> {/* Name  */}
+                    <col style={{ width: "20%" }} /> {/* Value */}
+                    <col style={{ width: "20%" }} /> {/* Gain % */}
+                    <col style={{ width: "20%" }} /> {/* Spark */}
+                  </colgroup>
+
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Value</th>
-                      <th>Gain %</th>
-                      <th>Spark</th>
+                      <th className="text-left">Name</th>
+                      <th className="text-right">Value</th>
+                      <th className="text-right">Gain %</th>
+                      <th className="text-center">Spark</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {invested.map((p) => (
                       <tr key={p.id}>
@@ -344,10 +359,13 @@ export default function DashboardPage() {
                             {p.name}
                           </Link>
                         </td>
+
                         <td className="text-right">{fmtMoney(p.equity)}</td>
+
                         <td className={`text-right ${colored(p.gain_percent)}`}>
                           {(p.gain_percent >= 0 ? "+" : "") + (+p.gain_percent).toFixed(1)}%
                         </td>
+
                         <td className="spark-cell">
                           <SparkMini
                             data={p.sparkline_gain}

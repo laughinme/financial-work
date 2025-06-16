@@ -1,6 +1,4 @@
-/* src/mainpage/dashboard.css */
 
-/* ─── Layout ───────────────────────────────────────────────────────────── */
 .dashboard {
   display: flex;
   min-height: 100vh;
@@ -13,7 +11,7 @@
   overflow-x: auto;
 }
 
-/* ─── Header ───────────────────────────────────────────────────────────── */
+
 .dash-header {
   display: flex;
   align-items: center;
@@ -48,7 +46,7 @@
   background: #dc2626;
 }
 
-/* ─── KPI Grid ─────────────────────────────────────────────────────────── */
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -81,7 +79,6 @@
   line-height: 1.2;
 }
 
-/* ─── Main Charts ───────────────────────────────────────────────────────── */
 .charts {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
@@ -102,7 +99,7 @@
   font-weight: 600;
 }
 
-/* ─── Allocation Legend ───────────────────────────────────────────────── */
+
 .allocation-legend {
   display: flex;
   justify-content: center;
@@ -127,7 +124,7 @@
   color: #4B5563;
 }
 
-/* ─── Bottom Row ───────────────────────────────────────────────────────── */
+
 .bottom-row {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -135,7 +132,7 @@
   margin-top: 32px;
 }
 
-/* ─── Portfolios You Hold ──────────────────────────────────────────────── */
+
 .portfolios-block {
   background: #FFFFFF;
   border-radius: 1rem;
@@ -149,65 +146,61 @@
   font-weight: 600;
 }
 
-/* ─── Таблица: занимает ровно половину ширины и прижата к левому краю ─── */
+
 .dash-table {
-  width: 50%;               /* теперь таблица занимает 50% контейнера */
-  border-collapse: separate;
-  border-spacing: 16px 0;   /* промежутки между колонками */
-  margin-left: 0;           /* прижата к левому краю */
-}
-
-.dash-table th,
-.dash-table td {
-  padding: 4px 8px;
-  white-space: nowrap;
-  border-bottom: 1px solid #E5E7EB;
+  width: 100%;
+  border-collapse: collapse;
   font-size: 0.875rem;
+  table-layout: fixed;        
 }
 
-.dash-table th {
-  font-size: 0.8rem;
+.dash-table thead th {
+  padding: 10px 8px;
   color: #6B7280;
   font-weight: 600;
+  text-transform: uppercase;
+  background: #F9FAFB;
+  letter-spacing: 0.03em;
 }
 
-/* Name — слева */
+.dash-table tbody td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.dash-table tbody tr:nth-child(even) { background: #FAFAFA; }
+.dash-table tbody tr:hover           { background: #F3F4F6; cursor: pointer; }
+
+
+.text-left   { text-align: left; }
+.text-right  { text-align: right; }
+.text-center { text-align: center; }
+
 .dash-table th:first-child,
-.dash-table td:first-child {
-  text-align: left;
-}
+.dash-table td:first-child { text-align: left;  padding-left: 8px; }
 
-/* Value и Gain % — по правому краю */
-.dash-table th:nth-child(2),
-.dash-table td:nth-child(2),
-.dash-table th:nth-child(3),
-.dash-table td:nth-child(3) {
-  text-align: right;
-}
-
-/* Spark — по центру */
 .dash-table th:last-child,
-.dash-table td:last-child {
-  text-align: center;
-}
+.dash-table td:last-child { text-align: center; }
 
-/* Ячейка со спарклайном */
-.spark-cell {
-  padding-left: 0;
-  padding-right: 0;
-}
 
-/* ─── Мини-спарклайн ───────────────────────────────────────────────────── */
-.spark-mini {
+.table-link {
+  color: #2563EB;
+  text-decoration: none;
+}
+.table-link:hover { text-decoration: underline; }
+
+
+.spark-cell  {
+  text-align: center;          
+  vertical-align: middle;
+}
+.spark-mini  {
   width: 70px;
   height: 32px;
-  cursor: pointer;
-}
-.spark-mini:hover {
-  filter: brightness(1.1);
+  display: inline-block;       
 }
 
-/* ─── Transactions Block ───────────────────────────────────────────────── */
+
 .tx-block {
   background: #FFFFFF;
   border-radius: 1rem;
@@ -235,7 +228,7 @@
   font-size: 0.75rem;
 }
 
-/* ─── Modal для полноразмерного Spark ─────────────────────────────────── */
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -264,10 +257,7 @@
   padding: 12px 18px 4px;
 }
 
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.2rem;
-}
+.modal-header h2 { margin: 0; font-size: 1.2rem; }
 
 .modal-close {
   background: none;
@@ -281,16 +271,13 @@
   padding: 0 18px 18px;
 }
 
-/* ─── Utility Animations ───────────────────────────────────────────────── */
-.animate-pulse {
-  animation: pulse 1.5s ease-in-out infinite;
-}
+.animate-pulse { animation: pulse 1.5s ease-in-out infinite; }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.4; }
 }
 
-/* ─── Color Utilities ─────────────────────────────────────────────────── */
+
 .text-green-600 { color: #059669; }
 .text-red-600   { color: #DC2626; }
