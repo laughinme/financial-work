@@ -15,7 +15,7 @@ def init_scheduler():
         trigger="cron",
         minute="*/10",
         id="myfx_job",
-        next_run_time=datetime.now() + timedelta(seconds=5),
+        next_run_time=datetime.now() + timedelta(seconds=3),
         max_instances=1,
         coalesce=True,
         misfire_grace_time=60,

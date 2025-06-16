@@ -9,6 +9,7 @@ from domain.myfxbook import (
     convert_day_gain,
     upsert_today_record,
     seed_history,
+    seed_portfolios,
     STATE,
     PortfolioState
 )
@@ -17,9 +18,7 @@ router = APIRouter()
 
 # Seed default state on module import
 if not STATE:
-    p = PortfolioState(id=1, balance=Decimal('0'), equity=Decimal('0'), deposits=Decimal('0'), withdrawals=Decimal('0'))
-    seed_history(p)
-    STATE[p.id] = p
+    seed_portfolios(5)
 
 @router.get('/login.json')
 async def login(email: str = Query(...), password: str = Query(...)):
@@ -53,7 +52,13 @@ async def get_daily_gain(
     end: date = Query(...)
 ):
     p = STATE[id]
-    data = [convert_day_gain(r, p.initial_equity) for d, r in sorted(p.history.items()) if start <= d <= end]
+    
+    previous_equity = Decimal('0')
+    data = []
+    for d, r in sorted(p.history.items()):
+        if start <= d <= end:
+            data.append(convert_day_gain(r, previous_equity))
+            previous_equity = r.equity
     return {"error": False, "message": "", "dailyGain": data}
 
 class AdminBody(BaseModel):

@@ -15,7 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 def calculate_drawdown(hist: list[DayData], current_eq: Decimal) -> Decimal:
-    peak = max((d.balance + d.floating_PL) for d in hist) if hist else current_eq
+    for index, day in enumerate(hist):
+        if day.date == date.today():
+            break
+    peak = max((d.balance + d.floating_PL) for d in hist[:index+1]) if hist else current_eq
     if peak == 0:
         return Decimal('0')
     return ((peak - current_eq) / peak * 100).quantize(Decimal('0.001'), ROUND_HALF_UP)

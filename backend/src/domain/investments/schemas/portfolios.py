@@ -24,7 +24,7 @@ class PortfolioPreview(BaseModel):
     net_profit: Decimal = Field(..., description="Net profit amount")
     first_trade_at: datetime = Field(..., description="Date of the first trade")
     
-    deposit: Decimal = Field(..., description="Total amount deposited")
+    deposit: Decimal = Field(..., description="Total amount deposited by platform")
     holders: int = Field(..., description="Number of investors to this portfolio")
     duration: int = Field(..., description="Portfolio lifetime in days")
     
@@ -51,7 +51,10 @@ class PortfolioOverview(BaseModel):
     net_profit: Decimal = Field(..., description="Net profit amount")
     first_trade_at: datetime = Field(..., description="Date of the first trade")
     
-    deposit: Decimal = Field(..., description="Total amount deposited")
+    deposits: Decimal = Field(..., description="Total portfolio deposits amount (direct myfxbook stats)")
+    withdrawals: Decimal = Field(..., description="Total portfolio withdrawals amount (direct myfxbook stats)")
+    
+    deposit: Decimal = Field(..., description="Total amount deposited by platform")
     holders: int = Field(..., description="Number of investors to this portfolio")
     duration: int = Field(..., description="Portfolio lifetime in days")
     

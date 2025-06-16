@@ -2,7 +2,7 @@ from decimal import Decimal
 from datetime import datetime, UTC, date as date_
 from uuid import UUID
 from datetime import timedelta, date
-from sqlalchemy import select, update, func, and_
+from sqlalchemy import select, update, func, and_, literal
 from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import array_agg, insert
@@ -133,14 +133,14 @@ class HoldingsInterface:
     async def holders_and_deposit(self, portfolio_id: int) -> tuple[list[UUID], Decimal]:
         query = (
             select(
-                array_agg(func.distinct(Holding.user_id)).label("holders"),
+                func.coalesce(array_agg(func.distinct(Holding.user_id)), literal([])).label("holders"),
                 func.coalesce(func.sum(Holding.total_deposit), 0).label("deposit")
             )
             .where(Holding.portfolio_id == portfolio_id)
         )
         result = await self.session.execute(query)
         row = result.first()
-        holders, deposit = row
+        holders, deposit = row if row else ([], Decimal('0'))
         
         return holders, deposit
     
