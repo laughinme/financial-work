@@ -37,6 +37,8 @@ class Config(BaseSettings):
     SITE_URL: str
     
     # External services data
+    MOCK_URL: str = 'http://localhost:8001/api/v1'
+    MYFXBOOK_URL: str = 'https://www.myfxbook.com/api'
     MYFXBOOK_LOGIN: str
     MYFXBOOK_PASSWORD: str
     
