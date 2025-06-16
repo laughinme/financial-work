@@ -23,6 +23,9 @@ class CreatePayment(BaseModel):
         None, description='Id of object payment is for, e.g. portfolio_id. Required if action != "deposit"'
     )
     
+    success_url: str = Field(..., description='User will be redirected to this url on success')
+    cancel_url: str = Field(..., description='User will be redirected to this url on payment cancel')
+    
     @model_validator(mode='after')
     def check_action(self) -> Self:
         if self.action != DepositAction.DEPOSIT and self.action_id is None:

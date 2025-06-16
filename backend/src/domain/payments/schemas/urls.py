@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 class RedirectPaymentSchema(BaseModel):
-    url: str = Field(..., description="Redirect URL provided by payment provider")
+    url: str = Field(..., description="Redirect URL provided by stripe")
 
 
 class StripeAccountLink(BaseModel):

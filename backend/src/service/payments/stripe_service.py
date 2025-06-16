@@ -13,7 +13,7 @@ from database.relational_db import (
     TransactionInterface,
     WalletInterface,
 )
-from domain.payments import PaymentStatus, PaymentProvider, CreatePayment, TransactionType, DepositAction
+from domain.payments import PaymentStatus, PaymentProvider, CreatePayment, TransactionType, DepositAction, Onboarding
 from service.investments import InvestmentService
 from core.config import Config
 from .exceptions import PaymentFailed, UnsupportedEvent, NoUSDWallet, PaymentSystemException
@@ -104,8 +104,8 @@ class StripeService:
              },
             ],
             metadata=metadata,
-            success_url=config.SITE_URL,
-            cancel_url=config.SITE_URL,
+            success_url=payload.success_url,
+            cancel_url=payload.cancel_url,
         )
         
         return session
@@ -230,23 +230,23 @@ class StripeService:
 
     
     @staticmethod
-    def _create_account_link(account_id: str) -> stripe.AccountLink:
+    def _create_account_link(account_id: str, payload: Onboarding) -> stripe.AccountLink:
         """
         Generates one-time URL that sends the user to Stripe-hosted onboarding.
         """
         link = stripe.AccountLink.create(
             account=account_id,
             type="account_onboarding",
-            refresh_url=config.SITE_URL,
-            return_url=config.SITE_URL,
+            refresh_url=payload.refresh_url,
+            return_url=payload.return_url,
             collection_options={"fields": "eventually_due"},
         )
         return link
     
     
-    async def create_account_link(self, account_id: str) -> str:
+    async def create_account_link(self, account_id: str, payload: Onboarding) -> str:
         return await asyncio.to_thread(
-            self._create_account_link, account_id
+            self._create_account_link, account_id, payload
         )
 
 

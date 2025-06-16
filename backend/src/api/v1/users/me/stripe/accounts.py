@@ -3,7 +3,7 @@ from fastapi import Depends
 
 from core.security import auth_user, AuthRouter
 from database.relational_db import User
-from domain.payments import StripeAccountLink
+from domain.payments import StripeAccountLink, Onboarding
 from service.payments import StripeService, get_stripe_service
 
 
@@ -15,6 +15,7 @@ router = AuthRouter()
     response_model=StripeAccountLink
 )
 async def get_onboarding_link(
+    payload: Onboarding,
     service: Annotated[StripeService, Depends(get_stripe_service)],
     user: Annotated[User, Depends(auth_user)]
 ):
@@ -22,7 +23,7 @@ async def get_onboarding_link(
         await service.connected_account(user)
         
     url = await service.create_account_link(
-        user.stripe_account_id
+        user.stripe_account_id, payload
     )
     
     # For test, instead of webhook we'll just set it here
