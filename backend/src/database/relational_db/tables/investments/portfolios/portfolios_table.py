@@ -26,7 +26,7 @@ class Portfolio(TimestampMixin, Base):
     nav_price: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False, default=Decimal('1'))
     balance: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
     equity: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
-    drawdown: Mapped[Decimal] = mapped_column(DECIMAL(6, 3), nullable=False) # in percent
+    drawdown: Mapped[Decimal] = mapped_column(DECIMAL(7, 3), nullable=False) # in percent
     
     deposits: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
     withdrawals: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)

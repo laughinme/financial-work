@@ -3,8 +3,9 @@ from __future__ import annotations
 import uuid
 import math
 import random
+import asyncio
 from enum import Enum
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime, UTC
 from decimal import Decimal, ROUND_HALF_UP
 
 from pydantic import BaseModel, Field, field_validator
@@ -18,6 +19,8 @@ class DayRecord(BaseModel):
     floating_pl: Decimal
     pips: Decimal
     lots: Decimal
+    deposit: Decimal = Decimal("0")
+    withdrawal: Decimal = Decimal("0")
 
 class Risk(Enum):
     """Level of strategy risk"""
@@ -36,6 +39,8 @@ class PortfolioState(BaseModel):
     floating_pl: Decimal = Decimal("0")
     history: dict[date, DayRecord] = Field(default_factory=dict)
     initial_equity: Decimal = Decimal("0")
+    user_deposit: Decimal = Decimal("0")
+    cash_cooldown: int = 0
     risk: Risk
     mu: float
     sigma: float
@@ -112,11 +117,16 @@ DAY = timedelta(days=1)
 def seed_history(
     p: PortfolioState,
     days_back: int = 365,
+    user_deposit: Decimal | None = None,
 ):
     p.initial_equity = Decimal("10000")
-    equity = p.initial_equity
-    balance = p.initial_equity
-    deposits = p.initial_equity
+    if user_deposit is None:
+        user_deposit = quantize_(random.uniform(100, 10000))
+
+    p.user_deposit = user_deposit
+    equity = p.initial_equity + user_deposit
+    balance = p.initial_equity + user_deposit
+    deposits = p.initial_equity + user_deposit
     withdrawals = Decimal("0")
     quiet_left = 0
 
@@ -125,12 +135,19 @@ def seed_history(
     for n in range(days_back):
         day = start_day + n * DAY
 
+        deposit_today = Decimal("0")
+        withdraw_today = Decimal("0")
+        if n == 0:
+            deposit_today = p.initial_equity + user_deposit
+
         # Deposit / Withdraw
         cash, quiet_left = maybe_cashflow(equity, quiet_left)
         if cash > 0:
             deposits += cash
+            deposit_today += cash
         elif cash < 0:
             withdrawals -= cash
+            withdraw_today += -cash
         balance += cash
         equity += cash
 
@@ -152,6 +169,8 @@ def seed_history(
             floating_pl = floating,
             pips = quantize_(profit / Decimal("10")),
             lots = quantize_(abs(profit) / Decimal("1000")),
+            deposit = deposit_today,
+            withdrawal = withdraw_today,
         )
         p.history[day] = rec
 
@@ -218,7 +237,7 @@ def convert_state_to_account(p: PortfolioState) -> dict:
         "equity": p.equity,
         "equityPercent": equity_percent,
         "demo": True,
-        "lastUpdateDate": date.today().strftime("%m/%d/%Y %H:%M"),
+        "lastUpdateDate": datetime.now(UTC).strftime("%m/%d/%Y %H:%M"),
         "creationDate": first_day.strftime("%m/%d/%Y %H:%M"),
         "firstTradeDate": first_day.strftime("%m/%d/%Y %H:%M"),
         "tracking": 0,
@@ -245,6 +264,8 @@ def convert_day_record(rec: DayRecord) -> list[dict]:
             "profit": rec.profit,
             "growthEquity": rec.equity,
             "floatingPips": quantize_(rec.floating_pl / Decimal("10")),
+            "deposit": rec.deposit,
+            "withdrawal": rec.withdrawal,
         }
     ]
 
@@ -262,7 +283,12 @@ def convert_day_gain(
     }]
 
 
-def upsert_today_record(p: PortfolioState) -> None:
+def upsert_today_record(
+    p: PortfolioState,
+    deposit_delta: Decimal = Decimal("0"),
+    withdraw_delta: Decimal = Decimal("0"),
+    profit_delta: Decimal = Decimal("0"),
+) -> None:
     today = date.today()
     record = p.history.get(today)
     if not record:
@@ -270,12 +296,49 @@ def upsert_today_record(p: PortfolioState) -> None:
             date=today,
             balance=p.balance,
             equity=p.equity,
-            profit=Decimal('0'),
+            profit=profit_delta,
             floating_pl=p.floating_pl,
-            pips=Decimal('0'),
-            lots=Decimal('0.1')
+            pips=Decimal("0"),
+            lots=Decimal("0.1"),
+            deposit=deposit_delta,
+            withdrawal=withdraw_delta,
         )
     else:
         record.balance = p.balance
         record.equity = p.equity
+        record.profit += profit_delta
+        record.floating_pl = p.floating_pl
+        record.deposit += deposit_delta
+        record.withdrawal += withdraw_delta
     p.history[today] = record
+
+
+async def simulate_realtime(period: float = 5.0) -> None:
+    """Continuously mutate portfolio state to mimic trading."""
+    
+    while True:
+        for p in STATE.values():
+            cash, p.cash_cooldown = maybe_cashflow(p.equity, p.cash_cooldown)
+            
+            if cash > 0:
+                p.deposits += cash
+                dep = cash
+                wd = Decimal("0")
+            elif cash < 0:
+                p.withdrawals -= cash
+                dep = Decimal("0")
+                wd = -cash
+            else:
+                dep = wd = Decimal("0")
+                
+            p.balance += cash
+            p.equity += cash
+
+            profit = gen_profit(p.equity, p.mu, p.sigma)
+            p.balance += profit
+            p.equity += profit
+
+            p.floating_pl = gen_floating_pl(p.equity, p.sigma)
+            upsert_today_record(p, dep, wd, profit)
+
+        await asyncio.sleep(period)

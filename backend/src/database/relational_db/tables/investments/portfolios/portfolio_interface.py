@@ -4,7 +4,6 @@ from datetime import datetime, UTC, date, timedelta
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import aliased
 
 from .portfolios_table import Portfolio
 from .portfolio_snapshots_table import PortfolioSnapshot
@@ -17,7 +16,12 @@ class PortfolioInterface:
         
     # helpers
     @staticmethod
-    def _portfolio_row(portfolio_id: int, acc: AccountSchema, nav_price: Decimal) -> dict:
+    def _portfolio_row(
+        portfolio_id: int,
+        acc: AccountSchema,
+        nav_price: Decimal,
+        units_total: Decimal | None = None,
+    ) -> dict:
         p_dict = dict(
             oid_myfx = acc.id,
             account_number = acc.account_id,
@@ -40,6 +44,9 @@ class PortfolioInterface:
         )
         if portfolio_id:
             p_dict['id'] = portfolio_id
+        
+        if units_total is not None:
+            p_dict['units_total'] = units_total
             
         return p_dict
     
@@ -136,7 +143,7 @@ class PortfolioInterface:
     
 
     async def bulk_insert_from_accounts(self, accounts: list[AccountSchema]) -> list[Portfolio]:
-        rows = [self._portfolio_row(None, a, Decimal('1')) for a in accounts]
+        rows = [self._portfolio_row(None, a, Decimal('1'), Decimal('0')) for a in accounts]
         result = await self.session.execute(
             insert(Portfolio).values(rows).returning(Portfolio)
         )

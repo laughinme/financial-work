@@ -8,6 +8,7 @@ from database.redis import get_redis, CacheRepo
 from service.myfxbook import MyFXService
 from service.investments import InvestmentService, get_investment_service
 from domain.myfxbook import DayData
+from domain.users import DUMMY_USER_ID
 
 
 logging.basicConfig(level=logging.INFO)
@@ -50,18 +51,46 @@ async def myfx_job():
             for p in portfolios_to_add:
                 daily_history = (await service.get_data_daily(p.oid_myfx, p.first_trade_at.date(), today)).data_daily
                 daily_gain = (await service.get_daily_gain(p.oid_myfx, p.first_trade_at.date(), today)).daily_gain
-                
-                for day in daily_history:
-                    current_equity = day.balance + day.floating_PL
-                    drawdown = calculate_drawdown(daily_history, current_equity)
+
+                units_total = Decimal("0")
+                nav = Decimal("1")
+                for idx, day in enumerate(daily_history):
+                    if idx == 0:
+                        units_total = day.growth_equity
+                        nav = Decimal("1")
+                        drawdown = calculate_drawdown(daily_history, day.growth_equity)
+                        snapshot_rows.append(
+                            p_repo._snapshot_row(p.id, day.date, nav, day.balance, day.growth_equity, drawdown)
+                        )
+                        continue
+
+                    if day.deposit:
+                        units = (day.deposit / nav).quantize(Decimal("0.00000001"))
+                        units_total += units
+                        await h_repo.issue_units(DUMMY_USER_ID, p.id, units, day.deposit, nav)
+                        holding = await h_repo.user_portfolio_holding(DUMMY_USER_ID, p.id)
+                        await h_repo.insert_snapshot(holding)
+
+                    if day.withdrawal:
+                        units = (day.withdrawal / nav).quantize(Decimal("0.00000001"))
+                        if await h_repo.burn_units(DUMMY_USER_ID, p.id, units, day.withdrawal):
+                            units_total -= units
+                            holding = await h_repo.user_portfolio_holding(DUMMY_USER_ID, p.id)
+                            await h_repo.insert_snapshot(holding)
+                            
+                    await h_repo.revalue_holdings()
+
+                    nav = invest_service.calc_nav_price(day.growth_equity, units_total)
+                    drawdown = calculate_drawdown(daily_history[:idx+1], day.growth_equity)
                     snapshot_rows.append(
-                        p_repo._snapshot_row(p.id, day.date, Decimal('1'), day.balance, current_equity, drawdown)
+                        p_repo._snapshot_row(p.id, day.date, nav, day.balance, day.growth_equity, drawdown)
                     )
-                    
+
                 gain_rows.extend(g_repo._gain_row(p.id, gain) for gain in daily_gain)
+                update_rows.append(p_repo._portfolio_row(p.id, accounts[p.oid_myfx], nav, units_total))
                 
             
-        start = today - timedelta(days=30)
+        start = today - timedelta(days=365*2)
         daily_data = await service.bulk_data_daily(*accounts.keys(), start=start, end=today)
         daily_gain = await service.bulk_daily_gain(*accounts.keys(), start=start, end=today)
         deposit_p_ids = set()

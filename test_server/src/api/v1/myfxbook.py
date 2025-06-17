@@ -59,24 +59,26 @@ async def get_daily_gain(
             previous_equity = r.equity
     return {"error": False, "message": "", "dailyGain": data}
 
-class AdminBody(BaseModel):
+class AdminPayload(BaseModel):
     pid: int
     amount: Decimal
 
 @router.get('/admin/deposit')
-async def admin_deposit(body: AdminBody):
-    p = STATE[body.pid]
-    p.deposits += body.amount
-    p.balance += body.amount
-    p.equity += body.amount
+async def admin_deposit(payload: AdminPayload):
+    p = STATE[payload.pid]
+    p.deposits += payload.amount
+    p.balance += payload.amount
+    p.equity += payload.amount
     upsert_today_record(p)
+    
     return {"ok": True}
 
 @router.get('/admin/withdraw')
-async def admin_withdraw(body: AdminBody):
-    p = STATE[body.pid]
-    p.withdrawals += body.amount
-    p.balance -= body.amount
-    p.equity -= body.amount
-    upsert_today_record(p)
+async def admin_withdraw(payload: AdminPayload):
+    p = STATE[payload.pid]
+    p.withdrawals += payload.amount
+    p.balance -= payload.amount
+    p.equity -= payload.amount
+    upsert_today_record(p, withdraw_delta=payload.amount)
+    
     return {"ok": True}
