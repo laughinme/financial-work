@@ -1,17 +1,27 @@
 import uvicorn
 from fastapi import FastAPI
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
+import asyncio
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from api import get_api_routers
 from core.config import Config
+from domain import simulate_realtime
 
 
 config = Config()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # task = asyncio.create_task(simulate_realtime())
+    # try:
+    #     yield
+    # finally:
+    #     task.cancel()
+    #     with suppress(asyncio.CancelledError):
+    #         await task
+    
     yield
 
 

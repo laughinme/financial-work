@@ -14,6 +14,8 @@ class DayData(BaseModel):
     profit: Decimal
     growth_equity: Decimal = Field(..., alias='growthEquity')
     floating_pips: Decimal = Field(..., alias='floatingPips')
+    deposit: Decimal | None = None
+    withdrawal: Decimal | None = None
     
     
     @field_validator('date', mode='before')

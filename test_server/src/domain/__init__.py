@@ -7,5 +7,6 @@ from .myfxbook import (
     convert_day_record,
     convert_day_gain,
     upsert_today_record,
+    simulate_realtime,
     STATE,
 )

@@ -4,7 +4,6 @@ from datetime import datetime, UTC, date, timedelta
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import aliased
 
 from .portfolios_table import Portfolio
 from .portfolio_snapshots_table import PortfolioSnapshot
@@ -17,7 +16,12 @@ class PortfolioInterface:
         
     # helpers
     @staticmethod
-    def _portfolio_row(portfolio_id: int, acc: AccountSchema, nav_price: Decimal) -> dict:
+    def _portfolio_row(
+        portfolio_id: int,
+        acc: AccountSchema,
+        nav_price: Decimal,
+        units_total: Decimal | None = None,
+    ) -> dict:
         p_dict = dict(
             oid_myfx = acc.id,
             account_number = acc.account_id,
@@ -40,6 +44,9 @@ class PortfolioInterface:
         )
         if portfolio_id:
             p_dict['id'] = portfolio_id
+        
+        if units_total is not None:
+            p_dict['units_total'] = units_total
             
         return p_dict
     
@@ -103,6 +110,7 @@ class PortfolioInterface:
             # .where(Portfolio.active == True)
             .offset((page - 1) * size)
             .limit(size or None)
+            .order_by(Portfolio.id)
         )
         return portfolios.all()
         
@@ -136,36 +144,40 @@ class PortfolioInterface:
     
 
     async def bulk_insert_from_accounts(self, accounts: list[AccountSchema]) -> list[Portfolio]:
-        rows = [self._portfolio_row(None, a, Decimal('1')) for a in accounts]
+        rows = [self._portfolio_row(None, a, Decimal('1'), Decimal('0')) for a in accounts]
         result = await self.session.execute(
             insert(Portfolio).values(rows).returning(Portfolio)
         )
         return list(result.scalars().all())
 
 
-    async def bulk_upsert(self, rows: list[dict]):
+    async def bulk_upsert(self, rows: list[dict], chunk_size: int = 1000):
         if not rows:
             return
-        query = insert(Portfolio).values(rows)
-        query = query.on_conflict_do_update(
-            index_elements=["oid_myfx"],
-            set_={c: getattr(query.excluded, c) for c in rows[0] if c != "id"}
-        )
-        await self.session.execute(query)
+        for i in range(0, len(rows), chunk_size):
+            batch = rows[i:i + chunk_size]
+            query = insert(Portfolio).values(batch)
+            query = query.on_conflict_do_update(
+                index_elements=["oid_myfx"],
+                set_={c: getattr(query.excluded, c) for c in batch[0] if c != "id"}
+            )
+            await self.session.execute(query)
 
     
-    async def bulk_upsert_snapshots(self, rows: list[dict]):
+    async def bulk_upsert_snapshots(self, rows: list[dict], chunk_size: int = 1000):
         if not rows:
             return
-        query = insert(PortfolioSnapshot).values(rows)
-        query = query.on_conflict_do_update(
-            index_elements=["portfolio_id", "snapshot_date"],
-            set_= {
-                "nav_price": query.excluded.nav_price,
-                "balance": query.excluded.balance,
-                "equity": query.excluded.equity,
-                "drawdown": query.excluded.drawdown,
-                "updated_at": datetime.now(UTC)
-            }
-        )
-        await self.session.execute(query)
+        for i in range(0, len(rows), chunk_size):
+            batch = rows[i:i + chunk_size]
+            query = insert(PortfolioSnapshot).values(batch)
+            query = query.on_conflict_do_update(
+                index_elements=["portfolio_id", "snapshot_date"],
+                set_={
+                    "nav_price": query.excluded.nav_price,
+                    "balance": query.excluded.balance,
+                    "equity": query.excluded.equity,
+                    "drawdown": query.excluded.drawdown,
+                    "updated_at": datetime.now(UTC),
+                },
+            )
+            await self.session.execute(query)

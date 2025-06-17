@@ -24,18 +24,20 @@ class GainsInterface:
         )
         
     
-    async def bulk_upsert_gains(self, rows: list[dict]):
+    async def bulk_upsert_gains(self, rows: list[dict], chunk_size: int = 1000):
         if not rows:
             return
-        query = insert(DailyGain).values(rows)
-        query = query.on_conflict_do_update(
-            index_elements=["portfolio_id", "date"],
-            set_= {
-                "gain_pct": query.excluded.gain_pct,
-                "profit":   query.excluded.profit,
-            }
-        )
-        await self.session.execute(query)
+        for i in range(0, len(rows), chunk_size):
+            batch = rows[i:i + chunk_size]
+            query = insert(DailyGain).values(batch)
+            query = query.on_conflict_do_update(
+                index_elements=["portfolio_id", "date"],
+                set_={
+                    "gain_pct": query.excluded.gain_pct,
+                    "profit": query.excluded.profit,
+                },
+            )
+            await self.session.execute(query)
         
         
     async def fetch_sparklines(

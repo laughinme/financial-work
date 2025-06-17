@@ -68,25 +68,32 @@ class InvestOrderInterface:
         return orders.all()
     
     
-    async def portfolio_delta(self, p_id: int) -> Decimal:
+    async def portfolio_deposit_withdrawal(self, p_id: int) -> dict[str, Decimal]:
         query = (
             select(
-                (func.sum(
+                func.sum(
+                    case((InvestOrder.direction == OrderDirection.INVEST, InvestOrder.amount), else_=0)
+                ).label('deposits'),
+                func.sum(
+                    case((InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.amount), else_=0)
+                ).label('withdrawals'),
+                (
+                    func.sum(
                         case((InvestOrder.direction == OrderDirection.INVEST, InvestOrder.amount), else_=0)
                     )
                     -
                     func.sum(
                         case((InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.amount), else_=0)
                     )
-                ).label("delta"),
+                ).label('delta')
             )
             .where(
                 InvestOrder.status == InvestOrderStatus.PENDING,
                 InvestOrder.portfolio_id == p_id
             )
         )
-        delta = await self.session.scalar(query)
-        return delta if delta else Decimal('0')
+        result = await self.session.execute(query)
+        return dict(result.mappings().all())
     
     
     async def aggregated_orders(

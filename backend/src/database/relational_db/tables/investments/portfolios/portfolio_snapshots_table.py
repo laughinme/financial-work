@@ -18,9 +18,9 @@ class PortfolioSnapshot(TimestampMixin, Base):
     )
     
     nav_price: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False)
-    balance: Mapped[Decimal] = mapped_column(DECIMAL(24,2), nullable=False)
-    equity: Mapped[Decimal] = mapped_column(DECIMAL(24,2), nullable=False)
-    drawdown: Mapped[Decimal] = mapped_column(DECIMAL(6,3), nullable=False)   # %
+    balance: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
+    equity: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
+    drawdown: Mapped[Decimal] = mapped_column(DECIMAL(7, 3), nullable=False)   # %
     
     __table_args__ = (
         PrimaryKeyConstraint('portfolio_id', 'snapshot_date', name='pk_portfolio_snapshot'),

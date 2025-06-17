@@ -8,17 +8,15 @@ from domain.myfxbook import (
     convert_day_record,
     convert_day_gain,
     upsert_today_record,
-    seed_history,
     seed_portfolios,
-    STATE,
-    PortfolioState
+    STATE
 )
 
 router = APIRouter()
 
 # Seed default state on module import
 if not STATE:
-    seed_portfolios(5)
+    seed_portfolios(20)
 
 @router.get('/login.json')
 async def login(email: str = Query(...), password: str = Query(...)):
@@ -61,24 +59,23 @@ async def get_daily_gain(
             previous_equity = r.equity
     return {"error": False, "message": "", "dailyGain": data}
 
-class AdminBody(BaseModel):
-    pid: int
-    amount: Decimal
 
-@router.get('/admin/deposit')
-async def admin_deposit(body: AdminBody):
-    p = STATE[body.pid]
-    p.deposits += body.amount
-    p.balance += body.amount
-    p.equity += body.amount
-    upsert_today_record(p)
-    return {"ok": True}
+class AdminPayload(BaseModel):
+    portfolio_id: int
+    deposits: Decimal
+    withdrawals: Decimal
+    
 
-@router.get('/admin/withdraw')
-async def admin_withdraw(body: AdminBody):
-    p = STATE[body.pid]
-    p.withdrawals += body.amount
-    p.balance -= body.amount
-    p.equity -= body.amount
-    upsert_today_record(p)
-    return {"ok": True}
+@router.post(
+    path='/admin/invest'
+)
+async def admin_invest(
+    payload: AdminPayload
+):
+    p = STATE[payload.portfolio_id]
+    p.deposits += payload.deposits
+    p.withdrawals += payload.withdrawals
+    p.balance += payload.deposits - payload.withdrawals
+    p.equity += payload.deposits - payload.withdrawals
+    
+    upsert_today_record(p, payload.deposits, payload.withdrawals)
