@@ -1,14 +1,14 @@
 // src/mainpage/dashboard.jsx
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate }          from "react-router-dom";
-import dayjs                          from "dayjs";
+import { Link, useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
 import "../global.css";
 import "./dashboard.css";
 
-import Sidebar         from "./components/Sidebar";
-import SparklineChart  from "./components/charts/SparklineChart";
-import { FiX }         from "react-icons/fi";
+import Sidebar from "./components/Sidebar";
+import SparklineChart from "./components/charts/SparklineChart";
+import { FiX } from "react-icons/fi";
 
 import {
   ResponsiveContainer,
@@ -25,42 +25,33 @@ import {
   YAxis,
 } from "recharts";
 
-import { usePortfolio }    from "../contexts/PortfolioContext";
-import { clearCurrent }    from "../auth/storage";
+import { usePortfolio } from "../contexts/PortfolioContext";
+import { clearCurrent } from "../auth/storage";
 
-import { getMe }           from "../api/users";
-import { getSummary }      from "../api/dashboard";
+import { getMe }             from "../api/users";
+import { getSummary }        from "../api/dashboard";
+import { getBalance,
+         createDeposit }     from "../api/payments";
 import { logout as logoutApi } from "../api/auth";
 import { listTransactions }   from "../api/transactions";
-import { createDeposit }      from "../api/payments";
 
-/* ─── Helpers ───────────────────────────────────────────────────────────── */
+/* ─── helpers ─────────────────────────────────────────────── */
 const fmtMoney = (n) => "$" + (+n).toLocaleString();
 const colored  = (n) => (+n >= 0 ? "text-green-600" : "text-red-600");
 
-const Skel = ({ h = 24 }) => (
-  <div className="animate-pulse bg-gray-200/60 rounded-lg" style={{ height: h }} />
-);
-
-const NoData = ({ h = 240 }) => (
-  <div className="flex items-center justify-center" style={{ height: h, color: "#6B7280" }}>
-    No&nbsp;data
-  </div>
-);
-
-/* ─── Мини-спарклайн в таблице ─────────────────────────────────────────── */
+/* mini-sparkline in table */
 function SparkMini({ data, onClick }) {
-  if (!data || data.length === 0) return null;
+  if (!data?.length) return null;
   return (
     <div className="spark-mini" onClick={onClick}>
       <ResponsiveContainer width="100%" height="100%">
-        <SparklineChart data={data} /> {/* full=false по умолчанию */}
+        <SparklineChart data={data} />
       </ResponsiveContainer>
     </div>
   );
 }
 
-/* ─── Модальное окно с большим графиком ────────────────────────────────── */
+/* modal with large sparkline */
 function SparkModal({ open, onClose, data, title }) {
   if (!open) return null;
   return (
@@ -82,27 +73,44 @@ function SparkModal({ open, onClose, data, title }) {
   );
 }
 
-/* ─── Component ────────────────────────────────────────────────────────── */
+/* ─── component ───────────────────────────────────────────── */
 export default function DashboardPage() {
   const navigate = useNavigate();
 
-  /* авторизация */
+  /* ——— Auth check ——— */
   const [authorized, setAuthorized] = useState(null);
   useEffect(() => {
-    getMe()
-      .then(() => setAuthorized(true))
-      .catch(() => setAuthorized(false));
-  }, [navigate]);
+    getMe().then(() => setAuthorized(true)).catch(() => setAuthorized(false));
+  }, []);
 
-  /* summary */
+  /* redirect if not authorized */
+  useEffect(() => {
+    if (authorized === false) {
+      clearCurrent();
+      navigate("/", { replace: true });
+    }
+  }, [authorized, navigate]);
+
+  /* ——— Summary (P/L, equity, etc.) ——— */
   const [summary, setSummary] = useState(null);
   useEffect(() => {
-    if (authorized) {
-      getSummary().then(setSummary).catch(console.error);
-    }
+    if (authorized) getSummary().then(setSummary).catch(console.error);
   }, [authorized]);
 
-  /* transactions */
+  /* ——— Payments balance ——— */
+  const [payBalance, setPayBalance] = useState(null);
+  const fetchBalance = () =>
+    getBalance().then(setPayBalance).catch(console.error);
+
+  useEffect(() => {
+    if (!authorized) return;
+    fetchBalance().then(() => {
+      /* second attempt 5 s later → успевает прийти Stripe-webhook */
+      setTimeout(fetchBalance, 5000);
+    });
+  }, [authorized]);
+
+  /* ——— Transactions ——— */
   const [tx, setTx] = useState(null);
   useEffect(() => {
     if (authorized) {
@@ -121,64 +129,64 @@ export default function DashboardPage() {
     }
   }, [authorized]);
 
-  /* redirect if unauthorized */
-  useEffect(() => {
-    if (authorized === false) {
-      clearCurrent();
-      navigate("/", { replace: true });
-    }
-  }, [authorized, navigate]);
-
-  /* modal state */
+  /* sparkline modal */
   const [modal, setModal] = useState({ open: false, data: null, name: "" });
 
-  if (authorized === null || authorized === false || summary === null) {
-    return null;
-  }
-
-  /* data from context */
+  /* portfolios data */
   const { invested, aggCharts } = usePortfolio();
-  const hasInvested       = invested.length > 0;
   const balanceEquityData = aggCharts.balanceEquity;
   const dailyPLData       = aggCharts.dailyPL;
 
   /* KPI */
-  const totalEquity   = Number(summary.total_equity);
-  const totalPnl      = Number(summary.total_pnl);
-  const todayPnl      = Number(summary.today_pnl);
+  const totalEquity = +summary?.total_equity || 0;
+  const totalPnl    = +summary?.total_pnl    || 0;
+  const todayPnl    = +summary?.today_pnl    || 0;
 
-  /* deposit */
+  /* ——— Deposit ——— */
   const handleDeposit = async () => {
     const raw = prompt("Enter amount to deposit (USD)", "100");
     const amount = Number(raw);
     if (!amount || amount <= 0) return;
     try {
-      const { url } = await createDeposit(amount, "USD", `Deposit $${amount}`);
-      window.location.href = url;
-    } catch (e) {
+      const { url } = await createDeposit(amount, "USD");
+      window.location.href = url;          // Stripe Checkout
+    } catch {
       alert("Failed to create deposit");
-      console.error(e);
     }
   };
 
+  /* ——— Logout ——— */
+  const handleLogout = async () => {
+    try { await logoutApi(); } catch {}
+    clearCurrent();
+    navigate("/", { replace: true });
+  };
+
+  if (authorized === null || summary === null) return null;
+
+  /* ─── JSX ─── */
   return (
     <>
       <div className="dashboard">
         <Sidebar />
 
         <main className="main-content">
-          {/* ─── HEADER ─────────────────────────────────────────────── */}
+          {/* ███ HEADER ███ */}
           <header className="dash-header">
-            <div className="logo-circle" />
-
             <span>
               Total Equity:&nbsp;<b>{fmtMoney(totalEquity)}</b>
             </span>
 
             <span>
+              Balance:&nbsp;
+              <b>{payBalance ? fmtMoney(+payBalance.balance) : "…"}</b>
+            </span>
+
+            <span>
               P/L Today:&nbsp;
               <b className={colored(todayPnl)}>
-                {todayPnl >= 0 ? "+" : ""}{fmtMoney(todayPnl)}
+                {todayPnl >= 0 ? "+" : ""}
+                {fmtMoney(todayPnl)}
               </b>
             </span>
 
@@ -186,49 +194,48 @@ export default function DashboardPage() {
               Deposit
             </button>
 
-            <button
-              className="btn-deposit logout"
-              onClick={async () => {
-                try { await logoutApi(); } finally {
-                  clearCurrent();
-                  window.location.href = "/";
-                }
-              }}
-            >
+            <button className="btn-deposit logout" onClick={handleLogout}>
               Logout
             </button>
+
+            <span className="brand-name">LocalHost</span>
           </header>
 
-          {/* ─── KPI GRID ──────────────────────────────────────────── */}
+          {/* ███ KPI GRID ███ */}
           <section className="kpi-grid">
             <div className="kpi-card">
               <p>Total P/L</p>
               <h3 className={colored(totalPnl)}>
-                {totalPnl >= 0 ? "+" : ""}{fmtMoney(totalPnl)}
+                {totalPnl >= 0 ? "+" : ""}
+                {fmtMoney(totalPnl)}
               </h3>
             </div>
+
             <div className="kpi-card">
               <p>Today P/L</p>
               <h3 className={colored(todayPnl)}>
-                {todayPnl >= 0 ? "+" : ""}{fmtMoney(todayPnl)}
+                {todayPnl >= 0 ? "+" : ""}
+                {fmtMoney(todayPnl)}
               </h3>
             </div>
+
+            <div className="kpi-card">
+              <p>Balance</p>
+              <h3>{payBalance ? fmtMoney(+payBalance.balance) : "…"}</h3>
+            </div>
+
             <div className="kpi-card">
               <p># Portfolios</p>
               <h3>{invested.length}</h3>
             </div>
-            <div className="kpi-card">
-              <p>Last Sync</p>
-              <h3>{dayjs().format("HH:mm:ss")}</h3>
-            </div>
           </section>
 
-          {/* ─── MAIN CHARTS ───────────────────────────────────────── */}
+          {/* ███ CHARTS ███ */}
           <section className="charts">
             {/* Portfolio Value */}
             <div className="chart large">
               <h2 className="chart-title">Portfolio Value vs Time</h2>
-              {hasInvested && balanceEquityData.length ? (
+              {invested.length && balanceEquityData.length ? (
                 <ResponsiveContainer width="100%" height={240}>
                   <LineChart data={balanceEquityData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -245,14 +252,14 @@ export default function DashboardPage() {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <NoData />
+                <div className="no-data">No data</div>
               )}
             </div>
 
             {/* Daily P/L */}
             <div className="chart small">
               <h2 className="chart-title">Daily P/L</h2>
-              {hasInvested && dailyPLData.length ? (
+              {invested.length && dailyPLData.length ? (
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={dailyPLData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -267,7 +274,7 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <NoData />
+                <div className="no-data">No data</div>
               )}
             </div>
 
@@ -276,11 +283,11 @@ export default function DashboardPage() {
               <h2 className="chart-title">Allocation</h2>
               {invested.length ? (
                 (() => {
-                  const total = invested.reduce((sum, s) => sum + s.equity, 0);
-                  if (!total) return <NoData h={200} />;
-                  const alloc = invested.map((s) => ({
-                    name: s.name,
-                    share_percent: (s.equity / total) * 100,
+                  const total = invested.reduce((s, p) => s + p.equity, 0);
+                  if (!total) return <div className="no-data">No data</div>;
+                  const alloc = invested.map((p) => ({
+                    name: p.name,
+                    share_percent: (p.equity / total) * 100,
                   }));
                   return (
                     <>
@@ -299,7 +306,10 @@ export default function DashboardPage() {
                             }
                           >
                             {alloc.map((_, i) => (
-                              <Cell key={i} fill={i % 2 ? "#10B981" : "#6366F1"} />
+                              <Cell
+                                key={i}
+                                fill={i % 2 ? "#10B981" : "#6366F1"}
+                              />
                             ))}
                           </Pie>
                         </PieChart>
@@ -310,7 +320,9 @@ export default function DashboardPage() {
                           <div key={i} className="legend-item">
                             <span
                               className="legend-dot"
-                              style={{ backgroundColor: i % 2 ? "#10B981" : "#6366F1" }}
+                              style={{
+                                background: i % 2 ? "#10B981" : "#6366F1",
+                              }}
                             />
                             <span className="legend-text">
                               {e.name} ({e.share_percent.toFixed(1)}%)
@@ -322,24 +334,24 @@ export default function DashboardPage() {
                   );
                 })()
               ) : (
-                <NoData h={200} />
+                <div className="no-data">No data</div>
               )}
             </div>
           </section>
 
-          {/* ─── PORTFOLIOS YOU HOLD & TRANSACTIONS ────────────────── */}
+          {/* ███ BOTTOM ROW (Portfolios + Transactions) ███ */}
           <section className="bottom-row">
-            {/* Portfolios You Hold */}
+            {/* Portfolios */}
             <div className="portfolios-block">
               <h2 className="section-title">Portfolios You Hold</h2>
+
               {invested.length ? (
                 <table className="dash-table">
-            
                   <colgroup>
-                    <col style={{ width: "40%" }} /> {/* Name  */}
-                    <col style={{ width: "20%" }} /> {/* Value */}
-                    <col style={{ width: "20%" }} /> {/* Gain % */}
-                    <col style={{ width: "20%" }} /> {/* Spark */}
+                    <col style={{ width: "40%" }} />
+                    <col style={{ width: "20%" }} />
+                    <col style={{ width: "20%" }} />
+                    <col style={{ width: "20%" }} />
                   </colgroup>
 
                   <thead>
@@ -354,7 +366,7 @@ export default function DashboardPage() {
                   <tbody>
                     {invested.map((p) => (
                       <tr key={p.id}>
-                        <td className="portfolio-name">
+                        <td>
                           <Link to={`/portfolio/${p.id}`} className="table-link">
                             {p.name}
                           </Link>
@@ -363,14 +375,20 @@ export default function DashboardPage() {
                         <td className="text-right">{fmtMoney(p.equity)}</td>
 
                         <td className={`text-right ${colored(p.gain_percent)}`}>
-                          {(p.gain_percent >= 0 ? "+" : "") + (+p.gain_percent).toFixed(1)}%
+                          {(p.gain_percent >= 0 ? "+" : "") +
+                            p.gain_percent.toFixed(1)}
+                          %
                         </td>
 
                         <td className="spark-cell">
                           <SparkMini
                             data={p.sparkline_gain}
                             onClick={() =>
-                              setModal({ open: true, data: p.sparkline_gain, name: p.name })
+                              setModal({
+                                open: true,
+                                data: p.sparkline_gain,
+                                name: p.name,
+                              })
                             }
                           />
                         </td>
@@ -379,11 +397,11 @@ export default function DashboardPage() {
                   </tbody>
                 </table>
               ) : (
-                <Skel h={120} />
+                <div className="no-data">No data</div>
               )}
             </div>
 
-            {/* Latest Transactions */}
+            {/* Transactions */}
             <div className="tx-block">
               <h2 className="section-title">Latest Transactions</h2>
               {tx ? (
@@ -393,21 +411,22 @@ export default function DashboardPage() {
                       <span>{dayjs(t.date).format("DD MMM")}</span>
                       <span>{t.type}</span>
                       <span className={colored(t.amount)}>
-                        {(t.amount >= 0 ? "+" : "") + fmtMoney(Math.abs(t.amount))}
+                        {(t.amount >= 0 ? "+" : "") +
+                          fmtMoney(Math.abs(t.amount))}
                       </span>
                       <span className="tx-note">{t.note}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <Skel h={120} />
+                <div className="no-data">Loading…</div>
               )}
             </div>
           </section>
         </main>
       </div>
 
-      {/* ───── Modal ───── */}
+      {/* sparkline modal */}
       <SparkModal
         open={modal.open}
         onClose={() => setModal({ open: false, data: null, name: "" })}

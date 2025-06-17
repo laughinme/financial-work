@@ -1,6 +1,14 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiHome, FiPackage, FiBarChart2, FiMessageSquare, FiSettings } from 'react-icons/fi';
+import {
+  FiHome,
+  FiPackage,
+  FiBarChart2,
+  FiMessageSquare,
+  FiSettings,
+} from 'react-icons/fi';
+
+import AvatarMenu from './AvatarMenu';
 import './sidebar.css';
 
 const nav = [
@@ -11,19 +19,21 @@ const nav = [
   { to: '/settings',   icon: FiSettings },
 ];
 
-export default function Sidebar(){
-  return(
+export default function Sidebar() {
+  return (
     <aside className="sidebar">
-      <div className="sidebar-logo" />
+      {/* Аватар пользователя */}
+      <AvatarMenu initials="U" />
+
       <nav className="sidebar-nav">
-        {nav.map(({to,icon:Icon})=>(
+        {nav.map(({ to, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             end
-            className={({isActive})=>`nav-btn${isActive?' active':''}`}
+            className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
           >
-            <Icon size={22}/>
+            <Icon size={22} />
           </NavLink>
         ))}
       </nav>

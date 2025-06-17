@@ -1,5 +1,4 @@
-// src/App.jsx
-import React                   from "react";
+import React from "react";
 import {
   BrowserRouter,
   Routes,
@@ -7,33 +6,30 @@ import {
   Navigate,
 } from "react-router-dom";
 
-import DashboardPage     from "./mainpage/dashboard";
-import PortfolioPage     from "./mainpage/components/portfolio";
-import StrategyPage      from "./mainpage/components/StrategyPortfolioPage";
-import AdminPage         from "./admin/AdminPage";
+import DashboardPage        from "./mainpage/dashboard";
+import PortfolioPage        from "./mainpage/components/portfolio";
+import StrategyPage         from "./mainpage/components/StrategyPortfolioPage";
+import ProfilePage          from "./mainpage/components/ProfilePage";
+import AdminPage            from "./admin/AdminPage";
 import { PortfolioProvider } from "./contexts/PortfolioContext";
 
-/* ─── helpers ─────────────────────────────────────────────────────────── */
-const isAdmin = () => localStorage.getItem("currentEmail") === "admin@example.com";
+const isAdmin = () =>
+  localStorage.getItem("currentEmail") === "admin@example.com";
 
-/* страницы, запрещённые админу */
 function UserOnly({ children }) {
   if (isAdmin()) return <Navigate to="/admin" replace />;
   return children;
 }
 
-/* страница, доступная только админу */
 function AdminOnly({ children }) {
   if (!isAdmin()) return <Navigate to="/dashboard" replace />;
   return children;
 }
 
-/* куда вести при открытии root-URL */
 function RootRedirect() {
   return <Navigate to={isAdmin() ? "/admin" : "/dashboard"} replace />;
 }
 
-/* ─── App ─────────────────────────────────────────────────────────────── */
 export default function App() {
   return (
     <PortfolioProvider>
@@ -41,7 +37,6 @@ export default function App() {
         <Routes>
           <Route path="/" element={<RootRedirect />} />
 
-          {/* admin area */}
           <Route
             path="/admin"
             element={
@@ -51,7 +46,6 @@ export default function App() {
             }
           />
 
-          {/* user area */}
           <Route
             path="/dashboard"
             element={
@@ -76,8 +70,15 @@ export default function App() {
               </UserOnly>
             }
           />
+          <Route
+            path="/profile"
+            element={
+              <UserOnly>
+                <ProfilePage />
+              </UserOnly>
+            }
+          />
 
-          {/* всё остальное → / */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
