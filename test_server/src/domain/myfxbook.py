@@ -85,30 +85,34 @@ def gen_floating_pl(equity: Decimal, sigma: float) -> Decimal:
     return quantize_(equity * Decimal(pct))
 
 
-# Cashflow calculation
-CASHFLOW_COOLDOWN = 5 
-def maybe_cashflow(equity: Decimal, quiet_days_left: int) -> tuple[Decimal, int]:
-    """Random deposit/withdraw"""
-    if quiet_days_left > 0:
-        return Decimal("0"), quiet_days_left - 1
+def maybe_cashflow(
+    equity: Decimal,
+    quiet_left: int,
+    initial_equity: Decimal,
+) -> tuple[Decimal, int]:
+    if quiet_left > 0:
+        return Decimal("0"), quiet_left - 1
 
-    # deposit or withdrawals happen 5% of all time
-    if random.random() < 0.05:
-        # Deposit happens more often
-        sign  = 1 if random.random() < 0.7 else -1 
-        # In amount of 1% - 20% of equity
-        frac = quantize_(random.uniform(0.01, 0.20))
-        delta = quantize_(sign * frac * equity)
-        
-        # With a minimum of 100 usd
-        if abs(delta) < Decimal("100"):
-            delta = Decimal("100") * sign
+    if random.random() >= 0.03:
+        return Decimal("0"), 0
 
-        if equity + delta < 0:
-            delta = -equity
-        return delta, CASHFLOW_COOLDOWN
-    
-    return Decimal("0"), 0
+    sign = 1 if random.random() < 0.6 else -1
+
+    frac  = quantize_(random.uniform(*(0.02, 0.08)))
+    delta = quantize_(sign * frac * initial_equity)
+
+    if abs(delta) < Decimal("50"):
+        delta = Decimal("50") * sign
+    if abs(delta) > Decimal("30000"):
+        delta = Decimal("30000") * sign
+
+    if sign == 1 and equity + delta > initial_equity * 5:
+        delta = Decimal("0")
+    elif sign == -1 and equity + delta < Decimal("0"):
+        delta = -equity
+
+    new_quiet = random.randint(*(3, 9))
+    return delta, new_quiet
 
 
 # History generation
@@ -141,7 +145,7 @@ def seed_history(
             deposit_today = p.initial_equity + user_deposit
 
         # Deposit / Withdraw
-        cash, quiet_left = maybe_cashflow(equity, quiet_left)
+        cash, quiet_left = maybe_cashflow(equity, quiet_left, p.initial_equity)
         if cash > 0:
             deposits += cash
             deposit_today += cash
@@ -313,12 +317,12 @@ def upsert_today_record(
     p.history[today] = record
 
 
-async def simulate_realtime(period: float = 5.0) -> None:
+async def simulate_realtime(period: float = 5 * 60) -> None:
     """Continuously mutate portfolio state to mimic trading."""
     
     while True:
         for p in STATE.values():
-            cash, p.cash_cooldown = maybe_cashflow(p.equity, p.cash_cooldown)
+            cash, p.cash_cooldown = maybe_cashflow(p.equity, p.cash_cooldown, p.initial_equity)
             
             if cash > 0:
                 p.deposits += cash

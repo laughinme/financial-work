@@ -16,7 +16,7 @@ router = APIRouter()
 
 # Seed default state on module import
 if not STATE:
-    seed_portfolios(50)
+    seed_portfolios(20)
 
 @router.get('/login.json')
 async def login(email: str = Query(...), password: str = Query(...)):
@@ -59,26 +59,23 @@ async def get_daily_gain(
             previous_equity = r.equity
     return {"error": False, "message": "", "dailyGain": data}
 
+
 class AdminPayload(BaseModel):
-    pid: int
-    amount: Decimal
-
-@router.get('/admin/deposit')
-async def admin_deposit(payload: AdminPayload):
-    p = STATE[payload.pid]
-    p.deposits += payload.amount
-    p.balance += payload.amount
-    p.equity += payload.amount
-    upsert_today_record(p)
+    portfolio_id: int
+    deposits: Decimal
+    withdrawals: Decimal
     
-    return {"ok": True}
 
-@router.get('/admin/withdraw')
-async def admin_withdraw(payload: AdminPayload):
-    p = STATE[payload.pid]
-    p.withdrawals += payload.amount
-    p.balance -= payload.amount
-    p.equity -= payload.amount
-    upsert_today_record(p, withdraw_delta=payload.amount)
+@router.post(
+    path='/admin/invest'
+)
+async def admin_invest(
+    payload: AdminPayload
+):
+    p = STATE[payload.portfolio_id]
+    p.deposits += payload.deposits
+    p.withdrawals += payload.withdrawals
+    p.balance += payload.deposits - payload.withdrawals
+    p.equity += payload.deposits - payload.withdrawals
     
-    return {"ok": True}
+    upsert_today_record(p, payload.deposits, payload.withdrawals)

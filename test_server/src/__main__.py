@@ -14,13 +14,15 @@ config = Config()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(simulate_realtime())
-    try:
-        yield
-    finally:
-        task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
+    # task = asyncio.create_task(simulate_realtime())
+    # try:
+    #     yield
+    # finally:
+    #     task.cancel()
+    #     with suppress(asyncio.CancelledError):
+    #         await task
+    
+    yield
 
 
 app = FastAPI(

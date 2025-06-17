@@ -68,20 +68,21 @@ async def myfx_job():
                         units = (day.deposit / nav).quantize(Decimal("0.00000001"))
                         units_total += units
                         await h_repo.issue_units(DUMMY_USER_ID, p.id, units, day.deposit, nav)
-                        holding = await h_repo.user_portfolio_holding(DUMMY_USER_ID, p.id)
-                        await h_repo.insert_snapshot(holding)
+                        # holding = await h_repo.user_portfolio_holding(DUMMY_USER_ID, p.id)
+                        # await h_repo.insert_snapshot(holding, day.date)
 
                     if day.withdrawal:
                         units = (day.withdrawal / nav).quantize(Decimal("0.00000001"))
                         if await h_repo.burn_units(DUMMY_USER_ID, p.id, units, day.withdrawal):
                             units_total -= units
-                            holding = await h_repo.user_portfolio_holding(DUMMY_USER_ID, p.id)
-                            await h_repo.insert_snapshot(holding)
-                            
-                    await h_repo.revalue_holdings()
+                            # holding = await h_repo.user_portfolio_holding(DUMMY_USER_ID, p.id)
+                            # await h_repo.insert_snapshot(holding)
 
                     nav = invest_service.calc_nav_price(day.growth_equity, units_total)
                     drawdown = calculate_drawdown(daily_history[:idx+1], day.growth_equity)
+                    
+                    await h_repo.revalue_holdings(day.date, nav)
+                    
                     snapshot_rows.append(
                         p_repo._snapshot_row(p.id, day.date, nav, day.balance, day.growth_equity, drawdown)
                     )

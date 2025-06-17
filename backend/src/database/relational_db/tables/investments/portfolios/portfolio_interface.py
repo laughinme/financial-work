@@ -110,6 +110,7 @@ class PortfolioInterface:
             # .where(Portfolio.active == True)
             .offset((page - 1) * size)
             .limit(size or None)
+            .order_by(Portfolio.id)
         )
         return portfolios.all()
         

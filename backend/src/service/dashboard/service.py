@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from database.relational_db import (
-    UoW, PortfolioInterface, HoldingsInterface, TransactionInterface
+    UoW, HoldingsInterface, TransactionInterface
 )
 
 
@@ -19,10 +19,10 @@ class DashboardService:
 
     async def allocation(self, user_id: UUID) -> list:
         return await self.h_repo.allocation(user_id)
-
     
-    async def cashflow(self, user_id: UUID, days: int) -> list:
-        return await self.tx_repo.cash_flow(user_id, days)
+    
+    async def daily_pnl(self, user_id: UUID, days: int) -> list:
+        return await self.tx_repo.daily_pnl_series(user_id, days)
 
 
     async def portfolio_value(self, user_id: UUID, days: int) -> list[dict]:

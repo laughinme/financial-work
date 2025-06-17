@@ -13,19 +13,14 @@ class AllocationPie(BaseModel):
     percentage: Decimal = Field(..., description="User's share in percents")
 
 
-class CashFlow(BaseModel):
+class DailyPnl(BaseModel):
     date: datetime
-    deposit: Decimal = Field(
-        ..., alias="deposits", description='Sum of deposits for current date'
-    )
-    withdraw: Decimal = Field(
-        ..., alias="withdrawals", description='Sum of withdrawals for current date'
-    )
+    pnl: Decimal
 
 
 class PortfolioValue(BaseModel):
     date: datetime
     equity: Decimal
     daily_pnl: Decimal | None = Field(
-        ..., description="Δ equity vs previous day (can be <0)"
+        None, description="Δ equity vs previous day (can be <0)"
     )

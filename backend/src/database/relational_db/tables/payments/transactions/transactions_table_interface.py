@@ -75,3 +75,30 @@ class TransactionInterface:
         result = await self.session.execute(query)
         
         return result.mappings().all()
+    
+    
+    async def daily_pnl_series(
+        self,
+        user_id: UUID,
+        days: int
+    ) -> list[dict]:
+        start = date.today() - timedelta(days=days)
+
+        day = func.date_trunc("day", Transaction.created_at)
+
+        query = (
+            select(
+                day.label("date"),
+                func.sum(Transaction.amount).label("pnl")
+            )
+            .where(
+                Transaction.user_id == user_id,
+                Transaction.type == TransactionType.PNL,
+                Transaction.created_at >= start
+            )
+            .group_by(day)
+            .order_by(day)
+        )
+
+        result = await self.session.execute(query)
+        return result.mappings().all()
