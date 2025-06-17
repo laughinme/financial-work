@@ -2,7 +2,8 @@ import asyncio
 import stripe
 import logging
 
-from decimal import Decimal
+from uuid import UUID
+from decimal import Decimal, ROUND_HALF_UP
 
 from database.relational_db import (
     UoW,
@@ -16,7 +17,7 @@ from database.relational_db import (
 from domain.payments import PaymentStatus, PaymentProvider, CreatePayment, TransactionType, DepositAction, Onboarding
 from service.investments import InvestmentService
 from core.config import Config
-from .exceptions import PaymentFailed, UnsupportedEvent, NoUSDWallet, PaymentSystemException
+from .exceptions import PaymentFailed, UnsupportedEvent, NoUSDWallet
 
 config = Config()
 
@@ -81,7 +82,8 @@ class StripeService:
         payload: CreatePayment, metadata: dict
     ) -> stripe.checkout.Session:
         amount_cents = int(payload.amount * 100)
-        fee_cents = int((amount_cents + 30) / 0.971) - amount_cents
+        fee_cents = int((amount_cents + 30) / 0.970) - amount_cents
+        metadata['price_no_fee'] = payload.amount
         session = stripe.checkout.Session.create(
             mode="payment",
             payment_method_types=["card"],
@@ -89,7 +91,7 @@ class StripeService:
                 {
                     "price_data": {
                         "currency": "usd",
-                        "product_data": {"name": payload.description or "Deposit"},
+                        "product_data": {"name": "Deposit"},
                         "unit_amount": amount_cents,
                     },
                     "quantity": 1,
@@ -111,7 +113,7 @@ class StripeService:
         return session
 
 
-    async def process_payment(self, body: dict):
+    async def process_webhook(self, body: dict):
         event_type = body.get("type")
         data = body.get("data", {}).get("object", {})
         metadata: dict[str, str] = data.get("metadata", {})
@@ -125,15 +127,16 @@ class StripeService:
             raise UnsupportedEvent()
 
         intent = await self.intent_repo.get(intent_id)
-        if intent.status == PaymentStatus.SUCCEEDED:
+        if intent.status in (PaymentStatus.SUCCEEDED, PaymentStatus.FAILED):
             logger.info("Duplicate webhook, ignoring")
             return
 
         match event_type:
             case "checkout.session.completed":
                 payment_intent = data.get("payment_intent")
-                amount_total = data.get("amount_total") or 0
-                amount = (amount_total / 100) if amount_total else 0
+                # amount_total = data.get("amount_total") or 0
+                # amount = (amount_total / 100) if amount_total else 0
+                amount = Decimal(metadata.get('price_no_fee'))
                 currency = "USD"
                 description = data.get("description")
 
@@ -164,9 +167,45 @@ class StripeService:
                 logger.info(
                     f"Payment {payment_intent} for the amount {amount} {currency} has been successfully completed."
                 )
+                
             case "payment_intent.payment_failed":
                 await self.intent_repo.update_status(intent_id, PaymentStatus.FAILED)
                 logger.warning("Payment failed")
+                
+            case "payout.paid":
+                payout_id = data.get("id")
+                amount = (Decimal(data.get('amount')) / 100).quantize(Decimal("0.01"), ROUND_HALF_UP)
+                currency = "USD"
+                user_id = metadata.get('user_id')
+                
+                logger.info('WITHDRAWAL')
+                await self.w_repo.withdraw(user_id, currency, amount)
+                
+                transaction = Transaction(
+                    user_id=user_id,
+                    intent_id=intent_id,
+                    type=TransactionType.WITHDRAW,
+                    amount=amount,
+                    currency=currency
+                )
+                await self.t_repo.add(transaction)
+                
+                await self.intent_repo.update_status(intent_id, PaymentStatus.SUCCEEDED)
+                
+                logger.info(f"Payout succeeded: {payout_id}, amount: {amount} {currency}")
+                
+            case "payout.failed":
+                payout_id = data.get("id")
+                amount = (Decimal(data.get('amount')) / 100).quantize(Decimal("0.01"), ROUND_HALF_UP)
+                currency = "USD"
+                failure_message = data.get("failure_message")
+                
+                await self.w_repo.cancel_withdrawal(user_id, currency, amount)
+                
+                await self.intent_repo.update_status(intent_id, PaymentStatus.FAILED)
+                
+                logger.warning(f"Payout failed: {payout_id}, amount: {amount} {currency}, reason: {failure_message}")
+                
             case _:
                 logger.warning(f"Unsupported event: {event_type}")
                 raise UnsupportedEvent()
@@ -268,22 +307,53 @@ class StripeService:
         
     
     @staticmethod
-    def _create_payout_connect(amount: Decimal, account_id: str) -> stripe.Payout:
+    def _create_payout_connect(amount: Decimal, account_id: str, metadata: dict = {}) -> stripe.Payout:
         payout = stripe.Payout.create(
             amount=int(amount * 100),
             currency="usd",
             stripe_account=account_id,
+            metadata=metadata
         )
         return payout
 
     
-    async def create_payout_connect(self, amount: Decimal, account_id: str) -> stripe.Payout:
+    async def create_payout_connect(self, amount: Decimal, account_id: str, user_id: UUID) -> stripe.Payout:
         # try:
         #     balance = await asyncio.to_thread(self._retrieve_balance)
         # except NoUSDWallet:
         #     raise PaymentSystemException
         
-        payout = await asyncio.to_thread(
-            self._create_payout_connect, amount, account_id
+        intent = PaymentIntent(
+            user_id=user_id,
+            amount=amount,
+            currency="USD",
+            status=PaymentStatus.PENDING,
+            provider=PaymentProvider.STRIPE,
+            _metadata=None,
         )
+        await self.intent_repo.add(intent)
+        await self.uow.session.flush()
+        
+        transaction = Transaction(
+            user_id=user_id,
+            intent_id=intent.id,
+            type=TransactionType.WITHDRAW_PENDING,
+            amount=amount,
+            currency='USD'
+        )
+        await self.t_repo.add(transaction)
+        
+        await self.w_repo.freeze(user_id, 'USD', amount)
+        
+        await self.uow.session.commit()
+        
+        metadata = {
+            "intent_id": str(intent.id),
+            "user_id": str(user_id),
+        }
+        
+        payout = await asyncio.to_thread(
+            self._create_payout_connect, amount, account_id, metadata
+        )
+        
         return payout

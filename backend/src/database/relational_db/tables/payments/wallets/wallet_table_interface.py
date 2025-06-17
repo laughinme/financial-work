@@ -140,3 +140,32 @@ class WalletInterface:
         result = await self.session.execute(query)
         
         return result.scalar()
+    
+    
+    # TODO: handle transfer and payouts properly
+    async def cancel_withdrawal(
+        self,
+        user_id: UUID,
+        currency: str,
+        amount: Decimal
+    ):
+        """
+        Cancel withdrawal
+        """
+        query = (
+            update(Wallet)
+            .where(
+                Wallet.user_id == user_id,
+                Wallet.currency == currency,
+                Wallet.locked >= amount
+            )
+            .values(
+                locked = Wallet.locked - amount,
+                balance = Wallet.balance + amount
+            )
+            .returning(Wallet)
+        )
+        
+        result = await self.session.execute(query)
+        
+        return result.scalar()

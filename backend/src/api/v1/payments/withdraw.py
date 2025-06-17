@@ -23,6 +23,9 @@ async def request_withdrawal(
     if not user.stripe_onboarding_completed or not user.stripe_account_id:
         raise HTTPException(412, detail="User must complete Stripe onboarding first")
     
-    await service.create_transfer(payload.amount, user.stripe_account_id)
+    try:
+        await service.create_transfer(payload.amount, user.stripe_account_id)
     
-    await service.create_payout_connect(payload.amount, user.stripe_account_id)
+        await service.create_payout_connect(payload.amount, user.stripe_account_id, user.id)
+    except Exception as e:
+        raise HTTPException(402, detail='Payout failed: ' + str(e))

@@ -23,7 +23,7 @@ class PaymentIntent(TimestampMixin, Base):
     currency: Mapped[str] = mapped_column(CHAR(3), nullable=False)
     status: Mapped[PaymentStatus] = mapped_column(Enum(PaymentStatus), nullable=False, index=True)
     provider: Mapped[PaymentProvider] = mapped_column(Enum(PaymentProvider), nullable=False)
-    _metadata: Mapped[str] = mapped_column(JSONB, nullable=True)
+    _metadata: Mapped[str] = mapped_column(JSONB, nullable=True, default=None)
     
     __table_args__ = (
         UniqueConstraint('provider', 'provider_payment_id', name='uq_payment_provider_id'),
