@@ -143,29 +143,33 @@ class PortfolioInterface:
         return list(result.scalars().all())
 
 
-    async def bulk_upsert(self, rows: list[dict]):
+    async def bulk_upsert(self, rows: list[dict], chunk_size: int = 1000):
         if not rows:
             return
-        query = insert(Portfolio).values(rows)
-        query = query.on_conflict_do_update(
-            index_elements=["oid_myfx"],
-            set_={c: getattr(query.excluded, c) for c in rows[0] if c != "id"}
-        )
-        await self.session.execute(query)
+        for i in range(0, len(rows), chunk_size):
+            batch = rows[i:i + chunk_size]
+            query = insert(Portfolio).values(batch)
+            query = query.on_conflict_do_update(
+                index_elements=["oid_myfx"],
+                set_={c: getattr(query.excluded, c) for c in batch[0] if c != "id"}
+            )
+            await self.session.execute(query)
 
     
-    async def bulk_upsert_snapshots(self, rows: list[dict]):
+    async def bulk_upsert_snapshots(self, rows: list[dict], chunk_size: int = 1000):
         if not rows:
             return
-        query = insert(PortfolioSnapshot).values(rows)
-        query = query.on_conflict_do_update(
-            index_elements=["portfolio_id", "snapshot_date"],
-            set_= {
-                "nav_price": query.excluded.nav_price,
-                "balance": query.excluded.balance,
-                "equity": query.excluded.equity,
-                "drawdown": query.excluded.drawdown,
-                "updated_at": datetime.now(UTC)
-            }
-        )
-        await self.session.execute(query)
+        for i in range(0, len(rows), chunk_size):
+            batch = rows[i:i + chunk_size]
+            query = insert(PortfolioSnapshot).values(batch)
+            query = query.on_conflict_do_update(
+                index_elements=["portfolio_id", "snapshot_date"],
+                set_={
+                    "nav_price": query.excluded.nav_price,
+                    "balance": query.excluded.balance,
+                    "equity": query.excluded.equity,
+                    "drawdown": query.excluded.drawdown,
+                    "updated_at": datetime.now(UTC),
+                },
+            )
+            await self.session.execute(query)

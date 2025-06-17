@@ -8,17 +8,15 @@ from domain.myfxbook import (
     convert_day_record,
     convert_day_gain,
     upsert_today_record,
-    seed_history,
     seed_portfolios,
-    STATE,
-    PortfolioState
+    STATE
 )
 
 router = APIRouter()
 
 # Seed default state on module import
 if not STATE:
-    seed_portfolios(5)
+    seed_portfolios(50)
 
 @router.get('/login.json')
 async def login(email: str = Query(...), password: str = Query(...)):
