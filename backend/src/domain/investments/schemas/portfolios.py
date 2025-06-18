@@ -30,6 +30,16 @@ class PortfolioPreview(BaseModel):
     
     invested_by_user: bool = Field(..., description="Shows if current user invested")
     
+    user_units: Decimal | None = Field(
+        None, description="Units owned by the current user"
+    )
+    user_value: Decimal | None = Field(
+        None, description="Current value of user's holdings"
+    )
+    user_share: Decimal | None = Field(
+        None, description="User share of total units in percent"
+    )
+    
     sparkline_gain: list[SparklineGain] = Field(default_factory=list, description="Sparkline data for gains")
 
 
@@ -51,11 +61,21 @@ class PortfolioOverview(BaseModel):
     net_profit: Decimal = Field(..., description="Net profit amount")
     first_trade_at: datetime = Field(..., description="Date of the first trade")
     
-    deposits: Decimal = Field(..., description="Total portfolio deposits amount (direct myfxbook stats)")
-    withdrawals: Decimal = Field(..., description="Total portfolio withdrawals amount (direct myfxbook stats)")
+    # deposits: Decimal = Field(..., description="Total portfolio deposits amount (direct myfxbook stats)")
+    # withdrawals: Decimal = Field(..., description="Total portfolio withdrawals amount (direct myfxbook stats)")
     
     deposit: Decimal = Field(..., description="Total amount deposited by platform")
     holders: int = Field(..., description="Number of investors to this portfolio")
     duration: int = Field(..., description="Portfolio lifetime in days")
     
     invested_by_user: bool = Field(..., description="Shows if current user invested")
+    
+    user_units: Decimal | None = Field(
+        None, description="Units owned by the current user"
+    )
+    user_value: Decimal | None = Field(
+        None, description="Current value of user's holdings"
+    )
+    user_share: Decimal | None = Field(
+        None, description="User share of total units in percent"
+    )

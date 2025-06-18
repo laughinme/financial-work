@@ -48,18 +48,25 @@ class HoldingsInterface:
     async def revalue_holdings(
         self,
         date: date_ = date_.today(),
-        new_nav: Decimal | None = None
+        new_nav: Decimal | None = None,
+        portfolio_id: int | None = None
     ):
-        rows = await self.session.execute(
+        query = (
             select(Holding, Portfolio.nav_price)
             .join(Portfolio, Holding.portfolio_id == Portfolio.id)
             .with_for_update(skip_locked=True)
         )
+
+        if portfolio_id is not None:
+            query = query.where(Holding.portfolio_id == portfolio_id)
+
+        rows = await self.session.execute(query)
         
         snap_rows = []
         tx_batch = []
         for holding, nav_price in rows:
-            new_val = (holding.units * new_nav if new_nav else nav_price).quantize(Decimal("0.00000001"))
+            price = new_nav if new_nav is not None else nav_price
+            new_val = (holding.units * price).quantize(Decimal("0.00000001"))
             delta = new_val - holding.current_value
             if delta == 0:
                 snap_rows.append(
@@ -242,6 +249,27 @@ class HoldingsInterface:
         holding = await self.session.scalar(query)
         
         return holding
+    
+    
+    async def user_holdings_map(
+        self,
+        user_id: UUID,
+        portfolio_ids: list[int],
+    ) -> dict[int, Holding]:
+        if not portfolio_ids:
+            return {}
+
+        query = (
+            select(Holding)
+            .where(
+                Holding.user_id == user_id,
+                Holding.portfolio_id.in_(portfolio_ids)
+            )
+        )
+        result = await self.session.execute(query)
+        holdings = result.scalars().all()
+
+        return {h.portfolio_id: h for h in holdings}
 
     
     async def user_summary(

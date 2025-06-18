@@ -81,7 +81,7 @@ async def myfx_job():
                     nav = invest_service.calc_nav_price(day.growth_equity, units_total)
                     drawdown = calculate_drawdown(daily_history[:idx+1], day.growth_equity)
                     
-                    await h_repo.revalue_holdings(day.date, nav)
+                    await h_repo.revalue_holdings(day.date, nav, p.id)
                     
                     snapshot_rows.append(
                         p_repo._snapshot_row(p.id, day.date, nav, day.balance, day.growth_equity, drawdown)
