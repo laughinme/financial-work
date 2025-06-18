@@ -6,7 +6,7 @@ Create Date: 2025-06-17 17:04:48.555390
 
 """
 from typing import Sequence, Union
-
+from decimal import Decimal
 from alembic import op
 import sqlalchemy as sa
 import uuid
@@ -61,6 +61,22 @@ def upgrade() -> None:
             provider="PASSWORD",
             external_id="dummy@user.com",
             secret=hashed_password
+        )
+    )
+    
+    wallet_sql = """
+        INSERT INTO wallets (
+            user_id, currency, balance, locked
+        ) VALUES (
+            :user_id, :currency, :balance, :locked
+        );
+    """
+    op.execute(
+        sa.text(wallet_sql).bindparams(
+            user_id=user_id,
+            currency="USD",
+            balance=Decimal('0'),
+            locked=Decimal('0')
         )
     )
 

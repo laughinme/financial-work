@@ -32,7 +32,7 @@ class TransactionsService:
         return tx
 
 
-    async def balance(self, user_id: UUID) -> Wallet:
+    async def balance(self, user_id: UUID) -> Wallet | None:
         return await self.w_repo.get_for_user(user_id)
 
     

@@ -16,7 +16,7 @@ class WalletInterface:
         await self.session.add(obj)
         
         
-    async def get_for_user(self, user_id: UUID) -> Wallet:
+    async def get_for_user(self, user_id: UUID) -> Wallet | None:
         return await self.session.scalar(
             select(Wallet)
             .where(

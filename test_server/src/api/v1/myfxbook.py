@@ -16,7 +16,7 @@ router = APIRouter()
 
 # Seed default state on module import
 if not STATE:
-    seed_portfolios(20)
+    seed_portfolios(5)
 
 @router.get('/login.json')
 async def login(email: str = Query(...), password: str = Query(...)):
