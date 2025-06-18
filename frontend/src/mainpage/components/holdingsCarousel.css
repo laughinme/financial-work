@@ -1,0 +1,24 @@
+.holdings-scroll{
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x mandatory;
+  }
+  .holdings-scroll::-webkit-scrollbar{ height:6px; }
+  .holdings-scroll::-webkit-scrollbar-thumb{
+    background:#d1d5db; border-radius:3px;
+  }
+  
+  .holding-card{
+    flex: 0 0 160px;
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+    padding:10px;
+    scroll-snap-align:start;
+  }
+  .spark-box{ width:100%; height:60px; margin-bottom:6px; }
+  .h-title{ margin:2px 0 0; font-weight:600; font-size:.9rem; }
+  .h-share{ margin:0; color:#6b7280; font-size:.8rem; }
+  

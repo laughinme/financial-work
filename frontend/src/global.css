@@ -1,22 +1,23 @@
-
+/* ───────── базовый контейнер ───────── */
 .layout{
-    display:grid;
-    grid-template-columns:72px 1fr;
-    min-height:100vh;
-  }
-  
+  /* просто блок + отступ равный ширине фикс-сайдбара */
+  min-height: 100vh;
+  padding-left: 160px;
+}
 
-  .main-content,
-  .portfolios{
-    padding:2rem;
-    overflow-y:auto;
-    background:#f5f6f8;
-  }
-  
+/* ───────── фон и прокрутка в дочерних страницах ───────── */
+.main-content,
+.strategies{
+  padding: 2rem;
+  overflow-y: auto;
+  background: #f5f6f8;
+}
 
-  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
-  body{
-    font-family:'Poppins',sans-serif;
-    -webkit-font-smoothing:antialiased;
-  }
-  
+/* ───────── шрифт по всему сайту ───────── */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
+
+body{
+  font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}

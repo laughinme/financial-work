@@ -1,5 +1,3 @@
-/* src/mainpage/dashboard.css */
-
 /* ────────────────── Layout ────────────────── */
 .dashboard {
   display: flex;
@@ -11,6 +9,7 @@
   flex: 1;
   padding: 32px;
   overflow-x: auto;
+  margin-left: 160px;         
 }
 
 /* ────────────────── Header ────────────────── */
@@ -18,7 +17,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-bottom: 32px; /* увеличенный отступ под шапкой */
+  margin-bottom: 32px;
 }
 
 /* Кнопки Deposit / Logout */
@@ -30,25 +29,18 @@
   border-radius: 8px;
   cursor: pointer;
 }
-.btn-deposit:hover {
-  background: #1e40af;
-}
+.btn-deposit:hover { background: #1e40af; }
 
-.logout {
-  background: #ef4444;
-  margin-left: 12px;
-}
-.logout:hover {
-  background: #dc2626;
-}
+.logout { background: #ef4444; margin-left: 12px; }
+.logout:hover { background: #dc2626; }
 
-/* Логотип / название компании */
+
 .brand-name {
-  margin-left: auto;               /* отталкиваем вправо */
+  margin-left: auto;
   font-family: 'Poppins', sans-serif;
-  font-size: 2rem;                 /* крупный заголовок */
-  font-weight: 700;                /* жирный */
-  color: #1f2937;                  /* темно-серый */
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
   letter-spacing: 0.02em;
   line-height: 1.2;
 }
@@ -85,9 +77,9 @@
 .text-red-600   { color: #dc2626; }
 
 /* ────────────────── Charts ────────────────── */
-.charts {
+.charts{
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;   
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -104,6 +96,8 @@
   font-size: 1rem;
   font-weight: 600;
 }
+
+.chart.large{ grid-column: 1 / -1; } 
 
 .no-data {
   display: flex;
@@ -140,13 +134,13 @@
 
 /* ────────────────── Bottom row ────────────────── */
 .bottom-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
+  display: flex;              
+  flex-direction: column;
   gap: 16px;
   margin-top: 32px;
 }
 
-/* ─── Portfolios You Hold ─────────────────────────── */
+/* ─── Portfolio Holdings (карусель) ─────────────────── */
 .portfolios-block {
   background: #ffffff;
   border-radius: 16px;
@@ -160,72 +154,7 @@
   font-weight: 600;
 }
 
-.dash-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  font-size: 0.875rem;
-}
-
-.dash-table thead th {
-  background: #f9fafb;
-  padding: 10px 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #6b7280;
-  font-weight: 600;
-}
-
-.dash-table tbody td {
-  padding: 12px 8px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.dash-table tbody tr:nth-child(even) {
-  background: #fafafa;
-}
-.dash-table tbody tr:hover {
-  background: #f3f4f6;
-  cursor: pointer;
-}
-
-/* Выровнять колонки */
-.text-left   { text-align: left; }
-.text-right  { text-align: right; }
-.text-center { text-align: center; }
-
-.dash-table th:first-child,
-.dash-table td:first-child {
-  padding-left: 8px;
-  text-align: left;
-}
-.dash-table th:last-child,
-.dash-table td:last-child {
-  text-align: center;
-}
-
-/* Ссылка в таблице */
-.table-link {
-  color: #2563eb;
-  text-decoration: none;
-}
-.table-link:hover {
-  text-decoration: underline;
-}
-
-/* Sparkline cell */
-.spark-cell {
-  text-align: center;
-  vertical-align: middle;
-}
-.spark-mini {
-  width: 70px;
-  height: 32px;
-  display: inline-block;
-  cursor: pointer;
-}
-
-/* ─── Latest Transactions ─────────────────────────────── */
+/* ─── Latest Transactions ───────────────────────────── */
 .tx-block {
   background: #ffffff;
   border-radius: 16px;
@@ -253,7 +182,7 @@
   color: #6b7280;
 }
 
-/* ─── Modal ─────────────────────────────────────── */
+/* ─── Modal (sparkline enlarge) ─────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;

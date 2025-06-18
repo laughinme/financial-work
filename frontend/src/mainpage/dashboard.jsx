@@ -1,14 +1,13 @@
-// src/mainpage/dashboard.jsx
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import dayjs from "dayjs";
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
 
-import "../global.css";
-import "./dashboard.css";
+import '../global.css';
+import './dashboard.css';
 
-import Sidebar from "./components/Sidebar";
-import SparklineChart from "./components/charts/SparklineChart";
-import { FiX } from "react-icons/fi";
+import Sidebar from './components/Sidebar';
+import SparklineChart from './components/charts/SparklineChart';
+import HoldingsCarousel from './components/HoldingsCarousel';
 
 import {
   ResponsiveContainer,
@@ -23,23 +22,26 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
-} from "recharts";
+} from 'recharts';
 
-import { usePortfolio } from "../contexts/PortfolioContext";
-import { clearCurrent } from "../auth/storage";
+import { usePortfolio } from '../contexts/PortfolioContext';
+import { clearCurrent } from '../auth/storage';
 
-import { getMe }             from "../api/users";
-import { getSummary }        from "../api/dashboard";
-import { getBalance,
-         createDeposit }     from "../api/payments";
-import { logout as logoutApi } from "../api/auth";
-import { listTransactions }   from "../api/transactions";
+import { getMe }                         from '../api/users';
+import {
+  getSummary,
+  getAllocation,
+  getCashflow,
+  getPortfolioValue,
+} from '../api/dashboard';
+import { getBalance, createDeposit }     from '../api/payments';
+import { logout as logoutApi }           from '../api/auth';
 
-/* ─── helpers ─────────────────────────────────────────────── */
-const fmtMoney = (n) => "$" + (+n).toLocaleString();
-const colored  = (n) => (+n >= 0 ? "text-green-600" : "text-red-600");
 
-/* mini-sparkline in table */
+const fmtMoney = (n) => '$' + (+n).toLocaleString();
+const colored  = (n) => (+n >= 0 ? 'text-green-600' : 'text-red-600');
+
+
 function SparkMini({ data, onClick }) {
   if (!data?.length) return null;
   return (
@@ -51,7 +53,8 @@ function SparkMini({ data, onClick }) {
   );
 }
 
-/* modal with large sparkline */
+
+import { FiX } from 'react-icons/fi';
 function SparkModal({ open, onClose, data, title }) {
   if (!open) return null;
   return (
@@ -73,93 +76,96 @@ function SparkModal({ open, onClose, data, title }) {
   );
 }
 
-/* ─── component ───────────────────────────────────────────── */
+
 export default function DashboardPage() {
   const navigate = useNavigate();
 
-  /* ——— Auth check ——— */
+  /* ─── Auth check ─── */
   const [authorized, setAuthorized] = useState(null);
   useEffect(() => {
     getMe().then(() => setAuthorized(true)).catch(() => setAuthorized(false));
   }, []);
 
-  /* redirect if not authorized */
   useEffect(() => {
     if (authorized === false) {
       clearCurrent();
-      navigate("/", { replace: true });
+      navigate('/', { replace: true });
     }
   }, [authorized, navigate]);
 
-  /* ——— Summary (P/L, equity, etc.) ——— */
+  /* ─── Summary KPI ─── */
   const [summary, setSummary] = useState(null);
   useEffect(() => {
     if (authorized) getSummary().then(setSummary).catch(console.error);
   }, [authorized]);
 
-  /* ——— Payments balance ——— */
+  /* ─── Stripe balance ─── */
   const [payBalance, setPayBalance] = useState(null);
   const fetchBalance = () =>
     getBalance().then(setPayBalance).catch(console.error);
 
   useEffect(() => {
     if (!authorized) return;
-    fetchBalance().then(() => {
-      /* second attempt 5 s later → успевает прийти Stripe-webhook */
-      setTimeout(fetchBalance, 5000);
-    });
+    fetchBalance().then(() => setTimeout(fetchBalance, 5000));
   }, [authorized]);
 
-  /* ——— Transactions ——— */
-  const [tx, setTx] = useState(null);
+  /* ─── графики с бэка ─── */
+  const [dailyPLData, setDailyPL]   = useState([]);
+  const [valueData,  setValueData]  = useState([]);
+  const [allocation, setAllocation] = useState([]);
+
   useEffect(() => {
-    if (authorized) {
-      listTransactions(10, 1)
-        .then((rows) =>
-          rows.map((t) => ({
-            id:     t.id,
-            date:   t.created_at,
-            type:   t.type,
-            amount: +t.amount,
-            note:   t.comment || "",
-          }))
-        )
-        .then(setTx)
-        .catch(console.error);
-    }
+    if (!authorized) return;
+
+    /* Daily P/L  (deposits − withdrawals) */
+    getCashflow(7)
+      .then(rows => rows.map(r => ({
+        date: r.date,
+        pl  : (+r.deposits) - (+r.withdrawals),
+      })))
+      .then(setDailyPL)
+      .catch(console.error);
+
+    /* Portfolio value */
+    getPortfolioValue(90)
+      .then(rows => rows.map(r => ({
+        date : r.date,
+        value: +r.portfolio_value,
+      })))
+      .then(setValueData)
+      .catch(console.error);
+
+    /* Allocation */
+    getAllocation().then(setAllocation).catch(console.error);
   }, [authorized]);
 
-  /* sparkline modal */
-  const [modal, setModal] = useState({ open: false, data: null, name: "" });
+  /* portfolios (для спарклайнов) */
+  const { invested, strategies } = usePortfolio();
 
-  /* portfolios data */
-  const { invested, aggCharts } = usePortfolio();
-  const balanceEquityData = aggCharts.balanceEquity;
-  const dailyPLData       = aggCharts.dailyPL;
+  /* модалка sparkline */
+  const [modal, setModal] = useState({ open: false, data: null, name: '' });
 
-  /* KPI */
+  /* KPI числа */
   const totalEquity = +summary?.total_equity || 0;
   const totalPnl    = +summary?.total_pnl    || 0;
   const todayPnl    = +summary?.today_pnl    || 0;
 
-  /* ——— Deposit ——— */
+  /* ─── Deposit ─── */
   const handleDeposit = async () => {
-    const raw = prompt("Enter amount to deposit (USD)", "100");
+    const raw = prompt('Enter amount to deposit (USD)', '100');
     const amount = Number(raw);
     if (!amount || amount <= 0) return;
     try {
-      const { url } = await createDeposit(amount, "USD");
-      window.location.href = url;          // Stripe Checkout
-    } catch {
-      alert("Failed to create deposit");
-    }
+      const { url } = await createDeposit(amount, 'USD');
+      window.location.href = url;
+    } catch { alert('Failed to create deposit'); }
   };
 
-  /* ——— Logout ——— */
+  /* ─── Logout ─── */
   const handleLogout = async () => {
     try { await logoutApi(); } catch {}
     clearCurrent();
-    navigate("/", { replace: true });
+    navigate('/', { replace: true });
   };
 
   if (authorized === null || summary === null) return null;
@@ -171,7 +177,7 @@ export default function DashboardPage() {
         <Sidebar />
 
         <main className="main-content">
-          {/* ███ HEADER ███ */}
+          {/* HEADER*/}
           <header className="dash-header">
             <span>
               Total Equity:&nbsp;<b>{fmtMoney(totalEquity)}</b>
@@ -179,13 +185,13 @@ export default function DashboardPage() {
 
             <span>
               Balance:&nbsp;
-              <b>{payBalance ? fmtMoney(+payBalance.balance) : "…"}</b>
+              <b>{payBalance ? fmtMoney(+payBalance.balance) : '…'}</b>
             </span>
 
             <span>
               P/L Today:&nbsp;
               <b className={colored(todayPnl)}>
-                {todayPnl >= 0 ? "+" : ""}
+                {todayPnl >= 0 ? '+' : ''}
                 {fmtMoney(todayPnl)}
               </b>
             </span>
@@ -201,12 +207,12 @@ export default function DashboardPage() {
             <span className="brand-name">LocalHost</span>
           </header>
 
-          {/* ███ KPI GRID ███ */}
+          {/* KPI GRID */}
           <section className="kpi-grid">
             <div className="kpi-card">
               <p>Total P/L</p>
               <h3 className={colored(totalPnl)}>
-                {totalPnl >= 0 ? "+" : ""}
+                {totalPnl >= 0 ? '+' : ''}
                 {fmtMoney(totalPnl)}
               </h3>
             </div>
@@ -214,61 +220,37 @@ export default function DashboardPage() {
             <div className="kpi-card">
               <p>Today P/L</p>
               <h3 className={colored(todayPnl)}>
-                {todayPnl >= 0 ? "+" : ""}
+                {todayPnl >= 0 ? '+' : ''}
                 {fmtMoney(todayPnl)}
               </h3>
             </div>
 
             <div className="kpi-card">
               <p>Balance</p>
-              <h3>{payBalance ? fmtMoney(+payBalance.balance) : "…"}</h3>
+              <h3>{payBalance ? fmtMoney(+payBalance.balance) : '…'}</h3>
             </div>
 
             <div className="kpi-card">
               <p># Portfolios</p>
-              <h3>{invested.length}</h3>
+              <h3>{summary.num_portfolios ?? invested.length}</h3>
             </div>
           </section>
 
-          {/* ███ CHARTS ███ */}
+          {/* CHARTS */}
           <section className="charts">
-            {/* Portfolio Value */}
-            <div className="chart large">
-              <h2 className="chart-title">Portfolio Value vs Time</h2>
-              {invested.length && balanceEquityData.length ? (
-                <ResponsiveContainer width="100%" height={240}>
-                  <LineChart data={balanceEquityData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="date" stroke="#6B7280" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, "auto"]} />
-                    <Tooltip formatter={(v) => "$" + (+v).toLocaleString()} />
-                    <Line
-                      type="monotone"
-                      dataKey="balance"
-                      stroke="#2563EB"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="no-data">No data</div>
-              )}
-            </div>
-
             {/* Daily P/L */}
             <div className="chart small">
               <h2 className="chart-title">Daily P/L</h2>
-              {invested.length && dailyPLData.length ? (
+              {dailyPLData.length ? (
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={dailyPLData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="date" stroke="#6B7280" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, "auto"]} />
-                    <Tooltip formatter={(v) => "$" + (+v).toLocaleString()} />
+                    <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, 'auto']} />
+                    <Tooltip formatter={(v) => '$' + (+v).toLocaleString()} />
                     <Bar dataKey="pl" isAnimationActive={false}>
                       {dailyPLData.map((d, i) => (
-                        <Cell key={i} fill={d.pl < 0 ? "#EF4444" : "#10B981"} />
+                        <Cell key={i} fill={d.pl < 0 ? '#EF4444' : '#10B981'} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -281,13 +263,11 @@ export default function DashboardPage() {
             {/* Allocation */}
             <div className="chart small">
               <h2 className="chart-title">Allocation</h2>
-              {invested.length ? (
+              {allocation.length ? (
                 (() => {
-                  const total = invested.reduce((s, p) => s + p.equity, 0);
-                  if (!total) return <div className="no-data">No data</div>;
-                  const alloc = invested.map((p) => ({
-                    name: p.name,
-                    share_percent: (p.equity / total) * 100,
+                  const alloc = allocation.map(a => ({
+                    name: a.name,
+                    share_percent: +a.percentage,
                   }));
                   return (
                     <>
@@ -306,10 +286,7 @@ export default function DashboardPage() {
                             }
                           >
                             {alloc.map((_, i) => (
-                              <Cell
-                                key={i}
-                                fill={i % 2 ? "#10B981" : "#6366F1"}
-                              />
+                              <Cell key={i} fill={i % 2 ? '#10B981' : '#6366F1'} />
                             ))}
                           </Pie>
                         </PieChart>
@@ -320,9 +297,7 @@ export default function DashboardPage() {
                           <div key={i} className="legend-item">
                             <span
                               className="legend-dot"
-                              style={{
-                                background: i % 2 ? "#10B981" : "#6366F1",
-                              }}
+                              style={{ background: i % 2 ? '#10B981' : '#6366F1' }}
                             />
                             <span className="legend-text">
                               {e.name} ({e.share_percent.toFixed(1)}%)
@@ -337,99 +312,61 @@ export default function DashboardPage() {
                 <div className="no-data">No data</div>
               )}
             </div>
-          </section>
 
-          {/* ███ BOTTOM ROW (Portfolios + Transactions) ███ */}
-          <section className="bottom-row">
-            {/* Portfolios */}
-            <div className="portfolios-block">
-              <h2 className="section-title">Portfolios You Hold</h2>
-
-              {invested.length ? (
-                <table className="dash-table">
-                  <colgroup>
-                    <col style={{ width: "40%" }} />
-                    <col style={{ width: "20%" }} />
-                    <col style={{ width: "20%" }} />
-                    <col style={{ width: "20%" }} />
-                  </colgroup>
-
-                  <thead>
-                    <tr>
-                      <th className="text-left">Name</th>
-                      <th className="text-right">Value</th>
-                      <th className="text-right">Gain %</th>
-                      <th className="text-center">Spark</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {invested.map((p) => (
-                      <tr key={p.id}>
-                        <td>
-                          <Link to={`/portfolio/${p.id}`} className="table-link">
-                            {p.name}
-                          </Link>
-                        </td>
-
-                        <td className="text-right">{fmtMoney(p.equity)}</td>
-
-                        <td className={`text-right ${colored(p.gain_percent)}`}>
-                          {(p.gain_percent >= 0 ? "+" : "") +
-                            p.gain_percent.toFixed(1)}
-                          %
-                        </td>
-
-                        <td className="spark-cell">
-                          <SparkMini
-                            data={p.sparkline_gain}
-                            onClick={() =>
-                              setModal({
-                                open: true,
-                                data: p.sparkline_gain,
-                                name: p.name,
-                              })
-                            }
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* Portfolio Value */}
+            <div className="chart large">
+              <h2 className="chart-title">Portfolio Value vs Time</h2>
+              {valueData.length ? (
+                <ResponsiveContainer width="100%" height={240}>
+                  <LineChart data={valueData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="date" stroke="#6B7280" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} domain={[0, 'auto']} />
+                    <Tooltip formatter={(v) => '$' + (+v).toLocaleString()} />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#2563EB"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               ) : (
                 <div className="no-data">No data</div>
               )}
             </div>
+          </section>
 
-            {/* Transactions */}
+          {/* BOTTOM ROW */}
+          <section className="bottom-row">
+            {/* Portfolio Holdings */}
+            <div className="portfolios-block">
+              <h2 className="section-title">Portfolio Holdings</h2>
+              <HoldingsCarousel
+                data={allocation.map(a => ({
+                  id: a.id,
+                  name: a.name,
+                  percentage: a.percentage,
+                  spark: (strategies.find(s => s.id === a.id) || {}).sparkline_gain,
+                }))}
+              />
+            </div>
+
+            {/* Latest Transactions */}
             <div className="tx-block">
               <h2 className="section-title">Latest Transactions</h2>
-              {tx ? (
-                <ul className="tx-list">
-                  {tx.map((t) => (
-                    <li key={t.id}>
-                      <span>{dayjs(t.date).format("DD MMM")}</span>
-                      <span>{t.type}</span>
-                      <span className={colored(t.amount)}>
-                        {(t.amount >= 0 ? "+" : "") +
-                          fmtMoney(Math.abs(t.amount))}
-                      </span>
-                      <span className="tx-note">{t.note}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="no-data">Loading…</div>
-              )}
+             
+              <div className="no-data">No data</div>
             </div>
           </section>
         </main>
       </div>
 
-      {/* sparkline modal */}
+      {/* модалка sparkline */}
       <SparkModal
         open={modal.open}
-        onClose={() => setModal({ open: false, data: null, name: "" })}
+        onClose={() => setModal({ open: false, data: null, name: '' })}
         data={modal.data}
         title={modal.name}
       />
