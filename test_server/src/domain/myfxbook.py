@@ -200,7 +200,7 @@ def seed_portfolios(count: int = 10):
             mu=random.uniform(*risk.value[0]),
             sigma=random.uniform(*risk.value[1])
         )
-        seed_history(p, 365 * 2)
+        seed_history(p, 365)
         STATE[i] = p
 
 

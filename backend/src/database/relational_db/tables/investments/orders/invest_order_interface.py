@@ -93,7 +93,7 @@ class InvestOrderInterface:
             )
         )
         result = await self.session.execute(query)
-        return dict(result.mappings().all())
+        return dict(result.mappings().first())
     
     
     async def aggregated_orders(

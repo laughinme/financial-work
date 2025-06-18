@@ -1,3 +1,5 @@
+import httpx
+import simplejson
 from sqlalchemy.exc import IntegrityError
 
 from database.relational_db import (
@@ -13,6 +15,8 @@ config = Config()
 
 
 class AdminService:
+    BASE_URL = config.MOCK_URL
+    
     def __init__(
         self,
         uow: UoW,
@@ -37,5 +41,17 @@ class AdminService:
     
     
     async def intent(self, portfolio_id: int):
-        delta = await self.io_repo.portfolio_delta(portfolio_id)
+        data = await self.io_repo.portfolio_deposit_withdrawal(portfolio_id)
+        data['portfolio_id'] = portfolio_id
+        
+        body = simplejson.dumps(data, use_decimal=True)
+        headers = {'Content-Type': 'application/json'}
+
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                url=f"{config.MOCK_URL}/admin/invest",
+                content=body,
+                headers=headers
+            )
+        
         await self.i_service.update_admin(portfolio_id)
