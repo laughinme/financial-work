@@ -1,55 +1,68 @@
 /* ───────── Sidebar ───────── */
 .sidebar{
   position: fixed;
-  left: 0; top: 0;
+  inset: 0 auto 0 0;          /* left-top anchor */
+  width: 220px;               /* ширина панели */
   height: 100vh;
   background: #ffffff;
   border-right: 1px solid #e5e7eb;
+
+  /*  ПРИЖИМАЕМ всё к левому краю  */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding-top: 1.25rem;
+  align-items: flex-start;    /* ← ключевая строка */
+  padding: 20px 0 0 24px;     /* слева 24 px “воздух” */
   box-sizing: border-box;
-  overflow: hidden;      
+  overflow: hidden;           /* панель не скроллится */
 }
 
-
+/* ─── навигация ─── */
 .sidebar-nav{
   display: flex;
   flex-direction: column;
   gap: 26px;
-  margin-top: 32px;
+  margin-top: 36px;
+  width: 100%;
 }
 
-/* пункт меню */
 .nav-btn{
-  width: 100%;
-  padding: 8px 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  width: calc(100% - 24px);   /* учитываем левый padding */
+  padding: 8px 0;
   border-radius: 12px;
   color: #6b7280;
   text-decoration: none;
   transition: background .18s, color .18s;
 }
-.nav-btn:hover{ background:#f3f4f6; color:#374151; }
-.nav-btn.active{ background:#eef2ff; color:#4f46e5; }
+.nav-btn:hover{
+  background: #f3f4f6;
+  color: #374151;
+}
+.nav-btn.active{
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.nav-label{
+  font-size: .95rem;
+  line-height: 1;
+}
 
-.nav-label{ font-size:.95rem; line-height:1; }
-
-/* блок кнопок */
+/* ─── кнопки Deposit / Withdraw внизу ─── */
 .sidebar-actions{
   margin-top: auto;
   width: 100%;
-  padding: 18px 14px;
+  padding: 18px 24px 24px 0;  /* справа 24, слева 0 — уже есть у .sidebar */
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
+
 .side-btn{
   width: 100%;
-  padding: 8px 0;
+  padding: 9px 0;
   border: none;
   border-radius: 10px;
   font-size: .9rem;

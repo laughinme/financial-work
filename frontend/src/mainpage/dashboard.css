@@ -5,13 +5,12 @@
   background: #f3f4f6;
 }
 
-.main-content {
-  flex: 1;
-  padding: 32px;
-  overflow-x: auto;
-  margin-left: 160px;         
+.main-content{
+  margin-left:220px;        /* отступ под сайдбар */
+  padding:32px 40px 40px;
+  overflow-x:auto;
+  background:#f5f6f8;
 }
-
 /* ────────────────── Header ────────────────── */
 .dash-header {
   display: flex;

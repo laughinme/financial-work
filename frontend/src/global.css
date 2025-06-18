@@ -1,23 +1,22 @@
-/* ───────── базовый контейнер ───────── */
+/* ─ базовый Layout ─ */
 .layout{
-  /* просто блок + отступ равный ширине фикс-сайдбара */
-  min-height: 100vh;
-  padding-left: 160px;
+  min-height:100vh;
+  /* БЕЗ padding-left – сайдбар уже фиксированный */
 }
 
-/* ───────── фон и прокрутка в дочерних страницах ───────── */
+/* блоки страниц – сдвигаем вручную */
 .main-content,
 .strategies{
-  padding: 2rem;
-  overflow-y: auto;
-  background: #f5f6f8;
+  margin-left:220px;      /* ← ширина панели */
+  padding:32px 40px;
+  overflow-y:auto;
+  background:#f5f6f8;
 }
 
-/* ───────── шрифт по всему сайту ───────── */
+/* шрифт */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
-
 body{
-  font-family: 'Poppins', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  margin: 0;
+  font-family:'Poppins',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  margin:0;
 }
