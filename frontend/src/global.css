@@ -1,22 +1,25 @@
-/* ─ базовый Layout ─ */
-.layout{
-  min-height:100vh;
-  /* БЕЗ padding-left – сайдбар уже фиксированный */
-}
 
-/* блоки страниц – сдвигаем вручную */
+.layout{min-height:100vh;}
+
 .main-content,
-.strategies{
-  margin-left:220px;      /* ← ширина панели */
-  padding:32px 40px;
-  overflow-y:auto;
-  background:#f5f6f8;
+.strategies,
+.strat-page,
+.profile-container{
+  margin-left:220px;
 }
 
-/* шрифт */
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
-body{
-  font-family:'Poppins',sans-serif;
-  -webkit-font-smoothing:antialiased;
-  margin:0;
+.main-content{padding:32px 40px;background:#f5f6f8;}
+.strategies{padding:2rem 2.5rem;background:#f5f6f8;height:100%;overflow-y:auto;}
+
+
+.btn{
+  border:none;border-radius:8px;padding:6px 18px;font-size:.9rem;font-weight:500;cursor:pointer;
+  transition:background .18s,opacity .18s;
 }
+.btn:hover{opacity:.9;}
+.btn.primary{background:#2563eb;color:#fff;}
+.btn.danger {background:#ef4444;color:#fff;}
+
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
+body{font-family:'Poppins',sans-serif;-webkit-font-smoothing:antialiased;margin:0;}
