@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
-from datetime import datetime, date
+from datetime import datetime, date, UTC
 from decimal import Decimal
 
 from domain.myfxbook import (
@@ -77,5 +77,6 @@ async def admin_invest(
     p.withdrawals += payload.withdrawals
     p.balance += payload.deposits - payload.withdrawals
     p.equity += payload.deposits - payload.withdrawals
+    p.last_update_date = datetime.now(UTC)
     
     upsert_today_record(p, payload.deposits, payload.withdrawals)

@@ -44,6 +44,7 @@ class PortfolioState(BaseModel):
     risk: Risk
     mu: float
     sigma: float
+    last_update_date: datetime
 
     @field_validator("balance", "equity", "deposits", "withdrawals", "floating_pl", mode="before")
     @classmethod
@@ -198,7 +199,8 @@ def seed_portfolios(count: int = 10):
             withdrawals=Decimal("0"),
             risk=risk,
             mu=random.uniform(*risk.value[0]),
-            sigma=random.uniform(*risk.value[1])
+            sigma=random.uniform(*risk.value[1]),
+            last_update_date=datetime.now(UTC)
         )
         seed_history(p, 365)
         STATE[i] = p
@@ -241,7 +243,7 @@ def convert_state_to_account(p: PortfolioState) -> dict:
         "equity": p.equity,
         "equityPercent": equity_percent,
         "demo": True,
-        "lastUpdateDate": datetime.now(UTC).strftime("%m/%d/%Y %H:%M"),
+        "lastUpdateDate": p.last_update_date.strftime("%m/%d/%Y %H:%M"),
         "creationDate": first_day.strftime("%m/%d/%Y %H:%M"),
         "firstTradeDate": first_day.strftime("%m/%d/%Y %H:%M"),
         "tracking": 0,
@@ -343,6 +345,8 @@ async def simulate_realtime(period: float = 5 * 60) -> None:
             p.equity += profit
 
             p.floating_pl = gen_floating_pl(p.equity, p.sigma)
+            p.last_update_date = datetime.now(UTC)
+            
             upsert_today_record(p, dep, wd, profit)
 
         await asyncio.sleep(period)

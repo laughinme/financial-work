@@ -23,7 +23,7 @@ def init_scheduler():
     scheduler.add_job(
         func=myfx_job,
         trigger="interval",
-        seconds=60 * 5,
+        seconds=30,
         id="myfx_job",
         next_run_time=datetime.now() + timedelta(seconds=3),
         max_instances=1,
