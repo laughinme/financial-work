@@ -1,6 +1,9 @@
+// src/mainpage/components/StrategyPortfolioPage.jsx
 /**
- *  StrategyPortfolioPage.jsx  — версия без zoom/pan, столбцы всегда
- *  укладываются в область графика (ось Y фиксирована [-100 %; 0 %]).
+ * Версия с модалкой Invest / Withdraw.
+ * При invested=true показываем ДВЕ активные кнопки:
+ * «Invest» – добавить средства,
+ * «Withdraw» – вывод средств.
  */
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -11,6 +14,7 @@ import { marked } from "marked";
 import Sidebar from "./Sidebar";
 import BalanceEquityChart from "./charts/BalanceEquityChart";
 import SparklineChart from "./charts/SparklineChart";
+import MoneyModal from "./ui/MoneyModal";
 
 import {
   ResponsiveContainer,
@@ -25,6 +29,10 @@ import {
 
 import "./strategyPortfolio.css";
 import { usePortfolio } from "../../contexts/PortfolioContext";
+import {
+  invest as investApi,
+  withdraw as withdrawApi,
+} from "../../api/portfolios";
 
 const CHART_HEIGHT = 240;
 const fmt = (n, d = 2) =>
@@ -36,194 +44,185 @@ const fmt = (n, d = 2) =>
 export default function StrategyPortfolioPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { strategies, toggleInvest, getHistory, getHolding } = usePortfolio();
+  const {
+    strategies,
+    refreshOne,
+    getHistory,
+    getHolding,
+  } = usePortfolio();
 
-  const [history, setHistory] = useState(null);
-  const [holding, setHolding] = useState(null);
+  /* ── state ── */
+  const [history, setHistory]   = useState(null);
+  const [holding, setHolding]   = useState(null);
+  const [modal,   setModal]     = useState({ open:false, type:null }); // invest | withdraw
 
-  /* ── загрузка стратегии ── */
+  /* ── текущая стратегия ── */
   const data = strategies.find((s) => s.id.toString() === id);
   if (!data) return <div style={{ padding: 32 }}>Loading…</div>;
 
+  /* ── загрузки ── */
   useEffect(() => {
     getHistory(id, 90).then(setHistory).catch(console.error);
     getHolding(id).then(setHolding).catch(() => setHolding(null));
   }, [id, getHistory, getHolding]);
 
-  /* ── данные для графиков ── */
-  const balanceData = history?.balance_equity || [];
+  /* ── invest / withdraw ── */
+  const handleInvest = async (amountUsd) => {
+    await investApi(id, amountUsd);
+    refreshOne(+id, { invested:true });
+    const h = await getHolding(id).catch(() => null);
+    setHolding(h);
+  };
 
-  const rawDrawdown = history?.drawdown || [];
-  const drawdownData = rawDrawdown.map((d) => ({
-    ...d,
-    drawdown: -Number(d.drawdown), // столбцы вниз
-  }));
+  const handleWithdraw = async (amountUsd) => {
+    const units = amountUsd / (data.nav_price || 1);
+    await withdrawApi(id, units);
+    const h = await getHolding(id).catch(() => null);
+    setHolding(h);
+    refreshOne(+id, { invested: h && h.units > 0 });
+  };
 
-  const plData =
-    history?.sparkline?.map((d) => ({
-      date: d.date,
-      gain_percent: d.gain_percent,
-    })) || [];
+  /* ── графики ── */
+  const balanceData  = history?.balance_equity || [];
+  const drawdownData = history?.drawdown?.map((d)=>({...d,drawdown:-+d.drawdown})) || [];
+  const plData       = history?.sparkline?.map(({date,gain_percent})=>({date,gain_percent})) || [];
 
-  const riskIcons = Array.from({ length: data.risk }, (_, i) => (
-    <FiZap key={i} size={14} />
-  ));
-  const NoData = () => <div className="nodata">No&nbsp;data</div>;
+  /* ── UI helpers ── */
+  const riskIcons = Array.from({ length:data.risk }, (_,i)=><FiZap key={i} size={14}/>);
+  const NoData    = () => <div className="nodata">No&nbsp;data</div>;
 
-  /* ─────────────────── UI ─────────────────── */
   return (
     <div className="layout">
-      <Sidebar />
+      <Sidebar/>
 
       <main className="strat-page">
-        {/* ─ Header ─ */}
+        {/* ───────── Header ───────── */}
         <header className="strat-header">
           <button className="back-btn" onClick={() => navigate(-1)}>
-            <FiChevronLeft size={18} /> Back
+            <FiChevronLeft size={18}/> Back
           </button>
 
           <div className="title-block">
-            <h1 className="strat-title">
-              {data.name} ({data.currency})
-            </h1>
+            <h1 className="strat-title">{data.name} ({data.currency})</h1>
             <span className="risk-pill">{riskIcons}</span>
             <span className="broker">Broker: {data.broker}</span>
           </div>
 
-          <button
-            className={`action-btn${data.invested ? " invested" : ""}`}
-            onClick={() => toggleInvest(data.id)}
-          >
-            {data.invested ? "Invested" : "Invest"}
-          </button>
+          {/* ───────── ACTION BUTTONS ───────── */}
+          {data.invested ? (
+            /* уже инвестирован: две кнопки */
+            <>
+              <button
+                className="action-btn"
+                onClick={()=>setModal({open:true,type:"invest"})}
+              >
+                Invest
+              </button>
+
+              <button
+                className="action-btn"
+                style={{ right: 140 }}
+                onClick={()=>setModal({open:true,type:"withdraw"})}
+              >
+                Withdraw
+              </button>
+            </>
+          ) : (
+            /* ещё не инвестирован */
+            <button
+              className="action-btn"
+              onClick={()=>setModal({open:true,type:"invest"})}
+            >
+              Invest
+            </button>
+          )}
         </header>
 
-        {/* ─ KPI ─ */}
+        {/* ───────── KPI ───────── */}
         <section className="kpi-grid">
-          <div className="kpi-card">
-            <p className="kpi-label">Equity</p>
-            <h3>{fmt(data.equity, 0)}</h3>
-          </div>
-          <div className="kpi-card">
-            <p className="kpi-label">NAV price</p>
-            <h3>{fmt(data.nav_price, 4)}</h3>
-          </div>
-          <div className="kpi-card">
-            <p className="kpi-label">Gain %</p>
-            <h3 className={data.gain_percent >= 0 ? "pos" : "neg"}>
-              {data.gain_percent >= 0 ? "+" : ""}
-              {fmt(data.gain_percent, 2)}%
-            </h3>
-          </div>
-          <div className="kpi-card">
-            <p className="kpi-label">Max DD</p>
-            <h3 className="neg">{fmt(data.drawdown, 1)}%</h3>
-          </div>
+          <div className="kpi-card"><p className="kpi-label">Equity</p><h3>{fmt(data.equity,0)}</h3></div>
+          <div className="kpi-card"><p className="kpi-label">NAV price</p><h3>{fmt(data.nav_price,4)}</h3></div>
+          <div className="kpi-card"><p className="kpi-label">Gain %</p>
+            <h3 className={data.gain_percent>=0?"pos":"neg"}>
+              {data.gain_percent>=0?"+":""}{fmt(data.gain_percent,2)}%
+            </h3></div>
+          <div className="kpi-card"><p className="kpi-label">Max DD</p><h3 className="neg">{fmt(data.drawdown,1)}%</h3></div>
         </section>
 
-        {/* ─ Charts ─ */}
+        {/* ───────── Charts ───────── */}
         <section className="chart-row">
           {/* Balance / Equity */}
           <div className="chart-box">
             <h3 className="chart-title">Balance / Equity</h3>
-            <div className="chart-wrapper" style={{ height: CHART_HEIGHT }}>
-              {balanceData.length ? (
-                <BalanceEquityChart data={balanceData} />
-              ) : (
-                <NoData />
-              )}
+            <div className="chart-wrapper" style={{height:CHART_HEIGHT}}>
+              {balanceData.length ? <BalanceEquityChart data={balanceData}/> : <NoData/>}
             </div>
           </div>
 
           {/* Drawdown */}
           <div className="chart-box">
             <h3 className="chart-title">Drawdown</h3>
-            <div className="chart-wrapper" style={{ height: CHART_HEIGHT }}>
+            <div className="chart-wrapper" style={{height:CHART_HEIGHT}}>
               {drawdownData.length ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={drawdownData}
-                    margin={{ top: 10, right: 20, left: 0, bottom: 6 }}
-                  >
-                    <CartesianGrid stroke="#E5E7EB" strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="date"
-                      tickFormatter={(d) => dayjs(d).format("DD MMM")}
-                      tick={{ fontSize: 11 }}
-                      stroke="#6B7280"
-                      tickLine={false}
-                      axisLine={{ stroke: "#D1D5DB" }}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis
-                      domain={[-100, 0]}
-                      tickFormatter={(v) => Math.abs(v)}
-                      tick={{ fontSize: 11 }}
-                      stroke="#6B7280"
-                      tickLine={false}
-                      axisLine={{ stroke: "#D1D5DB" }}
-                    />
-                    <Tooltip
-                      formatter={(v) => `${Math.abs(v)}%`}
-                      labelFormatter={(d) => `Date: ${dayjs(d).format("DD MMM")}`}
-                    />
-                    <Bar
-                      dataKey="drawdown"
-                      baseValue={0}
-                      barSize={4}
-                      barCategoryGap={1}
-                      isAnimationActive={false}
-                    >
-                      {drawdownData.map((_, i) => (
-                        <Cell key={i} fill="#EF4444" />
-                      ))}
+                  <BarChart data={drawdownData} margin={{top:10,right:20,left:0,bottom:6}}>
+                    <CartesianGrid stroke="#E5E7EB" strokeDasharray="3 3"/>
+                    <XAxis dataKey="date" tickFormatter={d=>dayjs(d).format("DD MMM")}
+                           tick={{fontSize:11}} stroke="#6B7280" tickLine={false}
+                           axisLine={{stroke:"#D1D5DB"}} interval="preserveStartEnd"/>
+                    <YAxis domain={[-100,0]} tickFormatter={v=>Math.abs(v)}
+                           tick={{fontSize:11}} stroke="#6B7280"
+                           tickLine={false} axisLine={{stroke:"#D1D5DB"}}/>
+                    <Tooltip formatter={v=>`${Math.abs(v)}%`}
+                             labelFormatter={d=>`Date: ${dayjs(d).format("DD MMM")}`}/>
+                    <Bar dataKey="drawdown" baseValue={0} barSize={4} isAnimationActive={false}>
+                      {drawdownData.map((_,i)=><Cell key={i} fill="#EF4444"/>)}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              ) : (
-                <NoData />
-              )}
+              ) : <NoData/>}
             </div>
           </div>
 
           {/* Daily P/L */}
           <div className="chart-box">
             <h3 className="chart-title">Daily P/L</h3>
-            <div className="chart-wrapper" style={{ height: CHART_HEIGHT }}>
-              {plData.length ? <SparklineChart data={plData} full /> : <NoData />}
+            <div className="chart-wrapper" style={{height:CHART_HEIGHT}}>
+              {plData.length ? <SparklineChart data={plData} full/> : <NoData/>}
             </div>
           </div>
         </section>
 
-        {/* ─ Personal position ─ */}
+        {/* ───────── Personal position ───────── */}
         {data.invested && holding && (
           <section className="personal">
             <h3>Your position</h3>
-            <p>
-              You own <b>{fmt(holding.units, 3)} u</b>
-            </p>
-            <p>
-              Current value <b>${fmt(holding.current_value)}</b>
-            </p>
-            <p className="pl-line">
-              Net P/L <b>{fmt(holding.pnl)}</b>
-            </p>
+            <p>You own <b>{fmt(holding.units,3)} u</b></p>
+            <p>Current value <b>${fmt(holding.current_value)}</b></p>
+            <p className="pl-line">Net P/L <b>{fmt(holding.pnl)}</b></p>
             <div className="btn-row">
-              <button className="btn-alt" onClick={() => toggleInvest(data.id)}>
+              <button className="btn-alt"
+                      onClick={()=>setModal({open:true,type:"withdraw"})}>
                 Withdraw
               </button>
             </div>
           </section>
         )}
 
-        {/* ─ Description ─ */}
+        {/* ───────── Description ───────── */}
         <section className="description">
           <h3>Strategy description</h3>
-          <div
-            className="md"
-            dangerouslySetInnerHTML={{ __html: marked.parse(data.description || "") }}
-          />
+          <div className="md" dangerouslySetInnerHTML={{__html:marked.parse(data.description||"")}}/>
         </section>
+
+        {/* ───────── MoneyModal ───────── */}
+        <MoneyModal
+          open={modal.open}
+          title={modal.type==="invest" ? "Invest USD" : "Withdraw USD"}
+          label="Amount (USD)"
+          onClose={()=>setModal({open:false,type:null})}
+          onSubmit={modal.type==="invest" ? handleInvest : handleWithdraw}
+        />
       </main>
     </div>
   );
