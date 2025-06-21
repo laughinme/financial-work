@@ -1,4 +1,3 @@
-// src/mainpage/components/Sidebar.jsx
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
@@ -9,10 +8,12 @@ import {
   FiSettings,
 } from "react-icons/fi";
 
-import MoneyModal from "./ui/MoneyModal";          // ← NEW
+import MoneyModal from "./ui/MoneyModal";
 import {
   createDeposit,
   createWithdraw,
+  getOnboardingLink,
+  DASHBOARD_URL,
 } from "../../api/payments";
 
 import AvatarMenu from "./AvatarMenu";
@@ -27,29 +28,39 @@ const nav = [
 ];
 
 export default function Sidebar() {
-  /* ── два модальных состояния ── */
-  const [modal, setModal] = useState({ open: false, type: null }); // deposit | withdraw
+  const [modal, setModal] = useState({ open: false, type: null }); 
 
-  const handleDeposit = async (amount) => {
+  /* ── API calls ───────────────────────────── */
+  const doDeposit = async (amount) => {
     const { url } = await createDeposit(amount);
-    window.location.href = url;
+    window.location.href = url; 
   };
 
-  const handleWithdraw = async (amount) => {
-    await createWithdraw(amount);
-    alert("Withdraw request accepted"); // можно заменить на toast
+  const doWithdraw = async (amount) => {
+    try {
+      await createWithdraw(amount);
+      alert("Withdraw request accepted");
+      window.location.href = DASHBOARD_URL;
+    } catch (err) {
+      const needOnboard =
+        err.status === 412 || /onboarding/i.test(err.message);
+      if (needOnboard) {
+        const { url } = await getOnboardingLink();
+        window.location.href = url;
+      } else {
+        alert(err.message || "Withdraw failed");
+      }
+    }
   };
 
-  const onSubmit =
-    modal.type === "deposit" ? handleDeposit : handleWithdraw;
+  const onSubmit = modal.type === "deposit" ? doDeposit : doWithdraw;
 
+  /* ── JSX ─────────────────────────────────── */
   return (
     <>
       <aside className="sidebar">
-        {/* аватар */}
         <AvatarMenu initials="U" />
 
-        {/* навигация */}
         <nav className="sidebar-nav">
           {nav.map(({ to, icon: Icon, text }) => (
             <NavLink
@@ -64,7 +75,7 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        {/* кнопки Deposit / Withdraw */}
+        {/* Quick actions */}
         <div className="sidebar-actions">
           <button
             className="side-btn primary"

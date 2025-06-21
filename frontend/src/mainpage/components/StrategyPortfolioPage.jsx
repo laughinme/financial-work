@@ -1,10 +1,4 @@
-// src/mainpage/components/StrategyPortfolioPage.jsx
-/**
- * Версия с модалкой Invest / Withdraw.
- * При invested=true показываем ДВЕ активные кнопки:
- * «Invest» – добавить средства,
- * «Withdraw» – вывод средств.
- */
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiZap, FiChevronLeft } from "react-icons/fi";
@@ -32,6 +26,8 @@ import { usePortfolio } from "../../contexts/PortfolioContext";
 import {
   invest as investApi,
   withdraw as withdrawApi,
+  getPortfolio,
+  getHistory,
 } from "../../api/portfolios";
 
 const CHART_HEIGHT = 240;
@@ -44,186 +40,220 @@ const fmt = (n, d = 2) =>
 export default function StrategyPortfolioPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const {
-    strategies,
-    refreshOne,
-    getHistory,
-    getHolding,
-  } = usePortfolio();
+  const { strategies, refreshOne } = usePortfolio();
 
-  /* ── state ── */
-  const [history, setHistory]   = useState(null);
-  const [holding, setHolding]   = useState(null);
-  const [modal,   setModal]     = useState({ open:false, type:null }); // invest | withdraw
+  const strat = strategies.find((s) => s.id.toString() === id);
+  if (!strat) return <div style={{ padding: 32 }}>Loading…</div>;
 
-  /* ── текущая стратегия ── */
-  const data = strategies.find((s) => s.id.toString() === id);
-  if (!data) return <div style={{ padding: 32 }}>Loading…</div>;
 
-  /* ── загрузки ── */
+  const [charts, setCharts] = useState(null);
+  const [modal, setModal] = useState({ open: false, type: null }); 
+
+  /* ───────── загрузка графиков ───────── */
   useEffect(() => {
-    getHistory(id, 90).then(setHistory).catch(console.error);
-    getHolding(id).then(setHolding).catch(() => setHolding(null));
-  }, [id, getHistory, getHolding]);
+    getHistory(id, 90).then(setCharts).catch(console.error);
+  }, [id]);
 
-  /* ── invest / withdraw ── */
-  const handleInvest = async (amountUsd) => {
-    await investApi(id, amountUsd);
-    refreshOne(+id, { invested:true });
-    const h = await getHolding(id).catch(() => null);
-    setHolding(h);
+  /* ───────── Invest / Withdraw ───────── */
+  const handleInvest = async (usd) => {
+    await investApi(id, usd);    
+    await refreshOne(+id);
   };
 
-  const handleWithdraw = async (amountUsd) => {
-    const units = amountUsd / (data.nav_price || 1);
-    await withdrawApi(id, units);
-    const h = await getHolding(id).catch(() => null);
-    setHolding(h);
-    refreshOne(+id, { invested: h && h.units > 0 });
+  const handleWithdraw = async (units) => {
+    await withdrawApi(id, units); 
+    await refreshOne(+id);
   };
 
-  /* ── графики ── */
-  const balanceData  = history?.balance_equity || [];
-  const drawdownData = history?.drawdown?.map((d)=>({...d,drawdown:-+d.drawdown})) || [];
-  const plData       = history?.sparkline?.map(({date,gain_percent})=>({date,gain_percent})) || [];
+  /* ───────── дергаем свежие данные при монтировании ───────── */
+  useEffect(() => {
+    getPortfolio(id)
+      .then(() => refreshOne(+id))
+      .catch(() => {});
+  }, [id, refreshOne]);
 
-  /* ── UI helpers ── */
-  const riskIcons = Array.from({ length:data.risk }, (_,i)=><FiZap key={i} size={14}/>);
-  const NoData    = () => <div className="nodata">No&nbsp;data</div>;
+  /* ───────── helpers ───────── */
+  const investedNow = strat.invested;
+  const riskIcons = Array.from({ length: strat.risk }, (_, i) => (
+    <FiZap key={i} size={14} />
+  ));
+  const NoData = () => <div className="nodata">No&nbsp;data</div>;
 
+  /* ───────── графики ───────── */
+  const balanceData = charts?.balance_equity || [];
+  const drawdownData =
+    charts?.drawdown?.map((d) => ({ ...d, drawdown: -+d.drawdown })) || [];
+  const plData =
+    charts?.sparkline?.map((d) => ({
+      date: d.date,
+      gain_percent: d.gain_percent,
+    })) || [];
+
+  /* ───────── render ───────── */
   return (
-    <div className="layout">
-      <Sidebar/>
+    <>
+      <div className="layout">
+        <Sidebar />
 
-      <main className="strat-page">
-        {/* ───────── Header ───────── */}
-        <header className="strat-header">
-          <button className="back-btn" onClick={() => navigate(-1)}>
-            <FiChevronLeft size={18}/> Back
-          </button>
+        <main className="strat-page">
+          {/* ---------------- Header ---------------- */}
+          <header className="strat-header">
+            <button className="back-btn" onClick={() => navigate(-1)}>
+              <FiChevronLeft size={18} /> Back
+            </button>
 
-          <div className="title-block">
-            <h1 className="strat-title">{data.name} ({data.currency})</h1>
-            <span className="risk-pill">{riskIcons}</span>
-            <span className="broker">Broker: {data.broker}</span>
-          </div>
+            <div className="title-block">
+              <h1 className="strat-title">
+                {strat.name} ({strat.currency})
+              </h1>
+              <span className="risk-pill">{riskIcons}</span>
+              <span className="broker">Broker: {strat.broker}</span>
+            </div>
 
-          {/* ───────── ACTION BUTTONS ───────── */}
-          {data.invested ? (
-            /* уже инвестирован: две кнопки */
-            <>
-              <button
-                className="action-btn"
-                onClick={()=>setModal({open:true,type:"invest"})}
-              >
-                Invest
-              </button>
-
-              <button
-                className="action-btn"
-                style={{ right: 140 }}
-                onClick={()=>setModal({open:true,type:"withdraw"})}
-              >
-                Withdraw
-              </button>
-            </>
-          ) : (
-            /* ещё не инвестирован */
+            {/* -------- Invest (USD) -------- */}
             <button
               className="action-btn"
-              onClick={()=>setModal({open:true,type:"invest"})}
+              onClick={() => setModal({ open: true, type: "invest" })}
             >
               Invest
             </button>
-          )}
-        </header>
 
-        {/* ───────── KPI ───────── */}
-        <section className="kpi-grid">
-          <div className="kpi-card"><p className="kpi-label">Equity</p><h3>{fmt(data.equity,0)}</h3></div>
-          <div className="kpi-card"><p className="kpi-label">NAV price</p><h3>{fmt(data.nav_price,4)}</h3></div>
-          <div className="kpi-card"><p className="kpi-label">Gain %</p>
-            <h3 className={data.gain_percent>=0?"pos":"neg"}>
-              {data.gain_percent>=0?"+":""}{fmt(data.gain_percent,2)}%
-            </h3></div>
-          <div className="kpi-card"><p className="kpi-label">Max DD</p><h3 className="neg">{fmt(data.drawdown,1)}%</h3></div>
-        </section>
+            {/* -------- Withdraw (units) -------- */}
+            <button
+              className="action-btn"
+              style={{ right: 140 }}
+              onClick={() => setModal({ open: true, type: "withdraw" })}
+              disabled={!investedNow}
+            >
+              Withdraw
+            </button>
+          </header>
 
-        {/* ───────── Charts ───────── */}
-        <section className="chart-row">
-          {/* Balance / Equity */}
-          <div className="chart-box">
-            <h3 className="chart-title">Balance / Equity</h3>
-            <div className="chart-wrapper" style={{height:CHART_HEIGHT}}>
-              {balanceData.length ? <BalanceEquityChart data={balanceData}/> : <NoData/>}
+          {/* ---------------- KPI ---------------- */}
+          <section className="kpi-grid">
+            <div className="kpi-card">
+              <p className="kpi-label">Equity</p>
+              <h3>{fmt(strat.equity, 0)}</h3>
             </div>
-          </div>
-
-          {/* Drawdown */}
-          <div className="chart-box">
-            <h3 className="chart-title">Drawdown</h3>
-            <div className="chart-wrapper" style={{height:CHART_HEIGHT}}>
-              {drawdownData.length ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={drawdownData} margin={{top:10,right:20,left:0,bottom:6}}>
-                    <CartesianGrid stroke="#E5E7EB" strokeDasharray="3 3"/>
-                    <XAxis dataKey="date" tickFormatter={d=>dayjs(d).format("DD MMM")}
-                           tick={{fontSize:11}} stroke="#6B7280" tickLine={false}
-                           axisLine={{stroke:"#D1D5DB"}} interval="preserveStartEnd"/>
-                    <YAxis domain={[-100,0]} tickFormatter={v=>Math.abs(v)}
-                           tick={{fontSize:11}} stroke="#6B7280"
-                           tickLine={false} axisLine={{stroke:"#D1D5DB"}}/>
-                    <Tooltip formatter={v=>`${Math.abs(v)}%`}
-                             labelFormatter={d=>`Date: ${dayjs(d).format("DD MMM")}`}/>
-                    <Bar dataKey="drawdown" baseValue={0} barSize={4} isAnimationActive={false}>
-                      {drawdownData.map((_,i)=><Cell key={i} fill="#EF4444"/>)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : <NoData/>}
+            <div className="kpi-card">
+              <p className="kpi-label">NAV price</p>
+              <h3>{fmt(strat.nav_price, 4)}</h3>
             </div>
-          </div>
-
-          {/* Daily P/L */}
-          <div className="chart-box">
-            <h3 className="chart-title">Daily P/L</h3>
-            <div className="chart-wrapper" style={{height:CHART_HEIGHT}}>
-              {plData.length ? <SparklineChart data={plData} full/> : <NoData/>}
+            <div className="kpi-card">
+              <p className="kpi-label">Gain %</p>
+              <h3 className={strat.gain_percent >= 0 ? "pos" : "neg"}>
+                {strat.gain_percent >= 0 ? "+" : ""}
+                {fmt(strat.gain_percent, 2)}%
+              </h3>
             </div>
-          </div>
-        </section>
-
-        {/* ───────── Personal position ───────── */}
-        {data.invested && holding && (
-          <section className="personal">
-            <h3>Your position</h3>
-            <p>You own <b>{fmt(holding.units,3)} u</b></p>
-            <p>Current value <b>${fmt(holding.current_value)}</b></p>
-            <p className="pl-line">Net P/L <b>{fmt(holding.pnl)}</b></p>
-            <div className="btn-row">
-              <button className="btn-alt"
-                      onClick={()=>setModal({open:true,type:"withdraw"})}>
-                Withdraw
-              </button>
+            <div className="kpi-card">
+              <p className="kpi-label">Max DD</p>
+              <h3 className="neg">{fmt(strat.drawdown, 1)}%</h3>
+            </div>
+            <div className="kpi-card">
+              <p className="kpi-label">Invested</p>
+              <h3>
+                {investedNow && strat.user_value != null
+                  ? fmt(strat.user_value, 0) + " $"
+                  : "—"}
+              </h3>
             </div>
           </section>
-        )}
 
-        {/* ───────── Description ───────── */}
-        <section className="description">
-          <h3>Strategy description</h3>
-          <div className="md" dangerouslySetInnerHTML={{__html:marked.parse(data.description||"")}}/>
-        </section>
+          {/* ---------------- Charts ---------------- */}
+          <section className="chart-row">
+            {/* Balance / Equity */}
+            <div className="chart-box">
+              <h3 className="chart-title">Balance / Equity</h3>
+              <div className="chart-wrapper" style={{ height: CHART_HEIGHT }}>
+                {balanceData.length ? (
+                  <BalanceEquityChart data={balanceData} />
+                ) : (
+                  <NoData />
+                )}
+              </div>
+            </div>
 
-        {/* ───────── MoneyModal ───────── */}
-        <MoneyModal
-          open={modal.open}
-          title={modal.type==="invest" ? "Invest USD" : "Withdraw USD"}
-          label="Amount (USD)"
-          onClose={()=>setModal({open:false,type:null})}
-          onSubmit={modal.type==="invest" ? handleInvest : handleWithdraw}
-        />
-      </main>
-    </div>
+            {/* Drawdown */}
+            <div className="chart-box">
+              <h3 className="chart-title">Drawdown</h3>
+              <div className="chart-wrapper" style={{ height: CHART_HEIGHT }}>
+                {drawdownData.length ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={drawdownData}>
+                      <CartesianGrid stroke="#E5E7EB" strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(d) => dayjs(d).format("DD MMM")}
+                        tick={{ fontSize: 11 }}
+                        stroke="#6B7280"
+                        tickLine={false}
+                        axisLine={{ stroke: "#D1D5DB" }}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        domain={[-100, 0]}
+                        tickFormatter={(v) => Math.abs(v)}
+                        tick={{ fontSize: 11 }}
+                        stroke="#6B7280"
+                        tickLine={false}
+                        axisLine={{ stroke: "#D1D5DB" }}
+                      />
+                      <Tooltip
+                        formatter={(v) => `${Math.abs(v)}%`}
+                        labelFormatter={(d) =>
+                          `Date: ${dayjs(d).format("DD MMM")}`
+                        }
+                      />
+                      <Bar dataKey="drawdown" baseValue={0} barSize={4}>
+                        {drawdownData.map((_, i) => (
+                          <Cell key={i} fill="#EF4444" />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <NoData />
+                )}
+              </div>
+            </div>
+
+            {/* Daily P/L */}
+            <div className="chart-box">
+              <h3 className="chart-title">Daily P/L</h3>
+              <div className="chart-wrapper" style={{ height: CHART_HEIGHT }}>
+                {plData.length ? (
+                  <SparklineChart data={plData} full />
+                ) : (
+                  <NoData />
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* ---------------- Description ---------------- */}
+          <section className="description">
+            <h3>Strategy description</h3>
+            <div
+              className="md"
+              dangerouslySetInnerHTML={{
+                __html: marked.parse(strat.description || ""),
+              }}
+            />
+          </section>
+        </main>
+      </div>
+
+      {/* ---------- MoneyModal ---------- */}
+      <MoneyModal
+        open={modal.open}
+        title={modal.type === "withdraw" ? "Withdraw units" : "Invest USD"}
+        label={modal.type === "withdraw" ? "Units" : "Amount (USD)"}
+        mode={modal.type === "withdraw" ? "withdraw" : "invest"}
+        navPrice={strat.nav_price}
+        onClose={() => setModal({ open: false, type: null })}
+        onSubmit={modal.type === "withdraw" ? handleWithdraw : handleInvest}
+      />
+    </>
   );
 }
