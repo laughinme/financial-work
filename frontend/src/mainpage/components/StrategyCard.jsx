@@ -81,7 +81,7 @@ export default function StrategyCard({ strategy }) {
             <span className="label">Equity</span>
             <b>{equity != null ? fmt(equity, 0) : "—"}</b>
           </span>
-        </div>
+          </div>
 
         <div className="metrics-row">
           <span>
