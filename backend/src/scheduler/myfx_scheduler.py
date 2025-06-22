@@ -95,6 +95,7 @@ async def myfx_job():
         daily_data = await service.bulk_data_daily(*accounts.keys(), start=start, end=today)
         daily_gain = await service.bulk_daily_gain(*accounts.keys(), start=start, end=today)
         deposit_p_ids = set()
+        histories: dict[int, list[DayData]] = {}
 
         for p in portfolios:
             acc = accounts.get(p.oid_myfx)
@@ -108,29 +109,40 @@ async def myfx_job():
                     no_dep_equity = acc.equity - delta_deposit + delta_withdrawal
 
                     nav_price = invest_service.calc_nav_price(no_dep_equity, p.units_total)
-                    
+
                     deposit_p_ids.add(p.id)
+                    histories[p.id] = hist
                     
                 else:
                     nav_price = invest_service.calc_nav_price(acc.equity, p.units_total)
                     
                 update_rows.append(p_repo._portfolio_row(p.id, acc, nav_price))
-                
+
                 if hist and hist[-1].date == today:
                     drawdown = calculate_drawdown(hist, acc.equity)
-                    snapshot_rows.append(
-                        p_repo._snapshot_row(p.id, today, nav_price, acc.balance, acc.equity, drawdown)
-                    )
-                
+                    if p.id not in deposit_p_ids:
+                        snapshot_rows.append(
+                            p_repo._snapshot_row(p.id, today, nav_price, acc.balance, acc.equity, drawdown)
+                        )
                     gain_rows.extend(g_repo._gain_row(p.id, g) for g in gain)
             
         await p_repo.bulk_upsert(update_rows)
-        await p_repo.bulk_upsert_snapshots(snapshot_rows)
         await g_repo.bulk_upsert_gains(gain_rows)
-        
+
         if deposit_p_ids:
             await invest_service.update_batch(deposit_p_ids)
-            
+
+            for pid in deposit_p_ids:
+                p = await p_repo.get_by_id(pid)
+                hist = histories.get(pid)
+                if hist and hist[-1].date == today:
+                    drawdown = calculate_drawdown(hist, p.equity)
+                    snapshot_rows.append(
+                        p_repo._snapshot_row(pid, today, p.nav_price, p.balance, p.equity, drawdown)
+                    )
+
+        await p_repo.bulk_upsert_snapshots(snapshot_rows)
+
         await h_repo.revalue_holdings()
 
         logger.info(
