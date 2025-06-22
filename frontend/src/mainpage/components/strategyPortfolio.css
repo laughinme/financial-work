@@ -68,7 +68,7 @@
 .kpi-card h3{margin:0;font-weight:700;font-size:1.25rem;}
 .pos{color:#10b981;} .neg{color:#ef4444;}
 
-/* ========== графики ========== */
+/* ========== charts ========== */
 .chart-row{
   display:grid;
   gap:1rem;

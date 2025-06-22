@@ -19,8 +19,8 @@ export default function HoldingsCarousel({ data = [], onShow = () => {} }) {
         >
           <div
             className="spark-box"
-            onClick={(e) => {          // отдельный клик по графику → modal
-              e.preventDefault();      // не переходить по ссылке
+            onClick={(e) => {          // separate click on chart → modal
+              e.preventDefault();      // don't follow the link
               onShow(h.name, h.spark || []);
             }}
           >

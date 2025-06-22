@@ -55,7 +55,7 @@ export default function ProfilePage() {
   const [showAll, setShowAll] = useState(false);
   const visibleTx = tx ? (showAll ? tx : tx.slice(0, 5)) : [];
 
-  /* ── модалки Deposit / Withdraw ── */
+  /* ── Deposit / Withdraw modals ── */
   const [modal, setModal] = useState({ open: false, type: null });
 
   const doDeposit = async (amountUsd) => {

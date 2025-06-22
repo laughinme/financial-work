@@ -6,7 +6,7 @@ function Reset({ onBack }) {
 
   const handleReset = e => {
     e.preventDefault();
-    alert(`Ссылка для сброса пароля отправлена на ${email}`);
+    alert(`Password reset link sent to ${email}`);
     onBack();
   };
 

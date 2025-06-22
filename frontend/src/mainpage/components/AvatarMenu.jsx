@@ -29,7 +29,7 @@ export default function AvatarMenu({ initials = 'U' }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  /** Выход */
+  /** Logout */
   const handleLogout = async () => {
     try { await logoutApi(); } catch {}
     clearCurrent();

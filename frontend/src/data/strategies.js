@@ -29,7 +29,7 @@ export const strategies = [
         { name:'Crypto', value:60 },
         { name:'FX',     value:40 },
       ],
-      invested:false,      // персональный блок скрыт пока не вложились
+      invested:false,      // personal block hidden until invested
       unitsOwned : 0,
       sharePct   : 0,
       currentValue:0,

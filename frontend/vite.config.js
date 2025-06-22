@@ -10,7 +10,7 @@ export default defineConfig({
     include: ['react-router-dom'],
   },
 
-  /* ─────────────── два HTML-entry ───────────── */
+  /* ─────────────── two HTML entries ───────────── */
   build: {
     rollupOptions: {
       input: {
@@ -23,7 +23,7 @@ export default defineConfig({
     },
   },
 
-  /* ─────────────── dev-сервер ─────────────── */
+  /* ─────────────── dev server ─────────────── */
   server: {
     allowedHosts: [
       'localhost',

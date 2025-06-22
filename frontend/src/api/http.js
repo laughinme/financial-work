@@ -15,7 +15,7 @@ const request = async (method, url, body) => {
     throw err;
   }
 
-  /* ——— другие ошибки ——— */
+  /* --- other errors --- */
   if (!res.ok) {
    
     let msg;

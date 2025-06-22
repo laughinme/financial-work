@@ -4,13 +4,13 @@ const delay = (ms = 200) => new Promise(r => setTimeout(r, ms));
 /* ───── 0.  GET /dashboard/summary ───── */
 export async function fetchSummary() {
   await delay();
-  // Теперь у нас две стратегии: id:3 и id:4
-  // Пусть их equity = 25 000 + 18 000 = 43 000
+  // Now we have two strategies: id:3 and id:4
+  // Let their equity be 25,000 + 18,000 = 43,000
   return {
-    total_equity   : 43000,    // сумма equity обеих стратегий
+    total_equity   : 43000,    // sum of equity of both strategies
     today_pl       : 18.44,
-    total_pnl      : 5000,     // просто демозначение
-    num_portfolios : 2,        // стало 2 портфеля
+    total_pnl      : 5000,     // just a demo value
+    num_portfolios : 2,        // now there are 2 portfolios
     last_sync      : '2025-06-05T10:34:21Z',
   };
 }
@@ -19,7 +19,7 @@ export async function fetchSummary() {
 export async function fetchCharts() {
   await delay();
   return {
-    // Данные для демонстрации — без изменений
+    // Demo data — unchanged
     portfolio_value: [
       { date:'2025-06-01', value: 12000 },
       { date:'2025-06-02', value: 22000 },

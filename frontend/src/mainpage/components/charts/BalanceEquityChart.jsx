@@ -16,7 +16,7 @@ const fmt = (d) => dayjs(d).format("DD MMM");
 export default function BalanceEquityChart({ data = [] }) {
   if (!data.length) return null;
 
-  /* авто-диапазон: +5 % сверху, -10 % снизу */
+  /* auto range: +5 % top, -10 % bottom */
   const vals = data.flatMap((d) => [+d.balance, +d.equity]);
   const ymin = Math.min(...vals) * 0.9;
   const ymax = Math.max(...vals) * 1.05;
@@ -31,7 +31,7 @@ export default function BalanceEquityChart({ data = [] }) {
                tickLine={false} axisLine={{ stroke: "#D1D5DB" }}
                interval="preserveStartEnd" />
 
-        {/* ←-- авто диапазон */}
+        {/* ←-- auto range */}
         <YAxis domain={[ymin, ymax]}
                tick={{ fontSize: 11 }} stroke="#6B7280"
                tickLine={false} axisLine={{ stroke: "#D1D5DB" }} />

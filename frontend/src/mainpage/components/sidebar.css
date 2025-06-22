@@ -2,21 +2,21 @@
 .sidebar{
   position: fixed;
   inset: 0 auto 0 0;          /* left-top anchor */
-  width: 220px;               /* ширина панели */
+  width: 220px;               /* panel width */
   height: 100vh;
   background: #ffffff;
   border-right: 1px solid #e5e7eb;
 
-  /*  ПРИЖИМАЕМ всё к левому краю  */
+  /*  align everything to the left  */
   display: flex;
   flex-direction: column;
-  align-items: flex-start;    /* ← ключевая строка */
-  padding: 20px 0 0 24px;     /* слева 24 px “воздух” */
+  align-items: flex-start;    /* ← key line */
+  padding: 20px 0 0 24px;     /* 24 px left padding */
   box-sizing: border-box;
-  overflow: hidden;           /* панель не скроллится */
+  overflow: hidden;           /* sidebar not scrollable */
 }
 
-/* ─── навигация ─── */
+/* ─── navigation ─── */
 .sidebar-nav{
   display: flex;
   flex-direction: column;
@@ -29,7 +29,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  width: calc(100% - 24px);   /* учитываем левый padding */
+  width: calc(100% - 24px);   /* account for left padding */
   padding: 8px 0;
   border-radius: 12px;
   color: #6b7280;
@@ -49,11 +49,11 @@
   line-height: 1;
 }
 
-/* ─── кнопки Deposit / Withdraw внизу ─── */
+/* ─── Deposit / Withdraw buttons at bottom ─── */
 .sidebar-actions{
   margin-top: auto;
   width: 100%;
-  padding: 18px 24px 24px 0;  /* справа 24, слева 0 — уже есть у .sidebar */
+  padding: 18px 24px 24px 0;  /* right 24, left 0 — sidebar already has */
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

@@ -49,7 +49,7 @@ export default function StrategyPortfolioPage() {
   const [charts, setCharts] = useState(null);
   const [modal, setModal] = useState({ open: false, type: null }); 
 
-  /* ───────── загрузка графиков ───────── */
+  /* ───────── load charts ───────── */
   useEffect(() => {
     getHistory(id, 90).then(setCharts).catch(console.error);
   }, [id]);
@@ -65,7 +65,7 @@ export default function StrategyPortfolioPage() {
     await refreshOne(+id);
   };
 
-  /* ───────── дергаем свежие данные при монтировании ───────── */
+  /* ───────── fetch fresh data on mount ───────── */
   useEffect(() => {
     getPortfolio(id)
       .then(() => refreshOne(+id))
@@ -79,7 +79,7 @@ export default function StrategyPortfolioPage() {
   ));
   const NoData = () => <div className="nodata">No&nbsp;data</div>;
 
-  /* ───────── графики ───────── */
+  /* ───────── charts ───────── */
   const balanceData = charts?.balance_equity || [];
   const drawdownData =
     charts?.drawdown?.map((d) => ({ ...d, drawdown: -+d.drawdown })) || [];

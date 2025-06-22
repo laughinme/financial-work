@@ -40,7 +40,7 @@ export default function DrawdownChart({ data }) {
 
         <Tooltip
           formatter={(v) => v + "%"}
-          labelFormatter={(v) => `Дата: ${formatDate(v)}`}
+          labelFormatter={(v) => `Date: ${formatDate(v)}`}
           contentStyle={{
             background: "#ffffff",
             border: "1px solid #E5E7EB",

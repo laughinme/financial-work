@@ -11,14 +11,14 @@ export default function Reg({ onSwitch }) {
   const [password, setPassword] = useState("");
   const [showPass, setShow]     = useState(false);
 
-  /* ───── Telegram-виджет ───── */
+  /* ───── Telegram widget ───── */
   useEffect(() => {
     window.onTelegramAuth = (user) => {
       linkTelegram(user, true)
         .then(() =>
           alert(`Telegram linked: @${user.username || user.id}`)
         )
-        .catch(() => alert("Не удалось связать Telegram-аккаунт"));
+        .catch(() => alert("Failed to link Telegram account"));
     };
 
     const script = document.createElement("script");
@@ -39,7 +39,7 @@ export default function Reg({ onSwitch }) {
     };
   }, []);
 
-  /* ───── отправка формы ───── */
+  /* ───── form submit ───── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -52,7 +52,7 @@ export default function Reg({ onSwitch }) {
     }
   };
 
-  /* ───── разметка ───── */
+  /* ───── markup ───── */
   return (
     <form className="login-card" onSubmit={handleSubmit}>
       <h1 className="form-title">Registration</h1>

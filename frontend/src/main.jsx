@@ -10,11 +10,11 @@ import { getMe } from "./api/users";
 function AuthSwitcher() {
   const [mode, setMode] = useState("loading"); 
 
-  /* ───── проверяем cookie-сессию ───── */
+  /* ───── check cookie session ───── */
   useEffect(() => {
     getMe()
       .then(() => {
-        // сессия валидна сразу на дашборд
+        // session valid, redirect to dashboard
         window.location.href = "/main.html#/dashboard";
       })
       .catch(() => {
@@ -23,7 +23,7 @@ function AuthSwitcher() {
       });
   }, []);
 
-  /* пока ждём ответа — ничего не рендерим */
+  /* render nothing while waiting */
   if (mode === "loading") return null;
 
   return (

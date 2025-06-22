@@ -24,13 +24,13 @@ export default function PortfolioPage() {
 
       <main className="strategies">
         <header className="strategies__header">
-          <h1 className="strategies__title">Все&nbsp;стратегии</h1>
+          <h1 className="strategies__title">All&nbsp;strategies</h1>
 
           <div className="search-bar">
             <FiSearch size={16} />
             <input
               type="text"
-              placeholder="Найти стратегию…"
+              placeholder="Find a strategy…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />

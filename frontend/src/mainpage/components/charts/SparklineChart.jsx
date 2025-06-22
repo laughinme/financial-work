@@ -11,14 +11,14 @@ import {
   Tooltip,
 } from "recharts";
 
-/* удобный формат для дат на оси X */
+/* convenient format for dates on the X axis */
 const formatDate = (d) => dayjs(d).format("DD MMM");
 
 /**
- * Мини-график / полноразмерный график.
+ * Mini-chart / full-size chart.
  *
  * @param {{date:string,gain_percent:number|string}[]} data
- * @param {boolean} full – если true → оси, сетка, анимация
+ * @param {boolean} full – if true → axes, grid, animation
  */
 export default function SparklineChart({ data, full = false }) {
   if (!Array.isArray(data) || data.length === 0) return null;
@@ -47,8 +47,8 @@ export default function SparklineChart({ data, full = false }) {
           stroke="#6B7280"
           tickLine={false}
           axisLine={{ stroke: "#D1D5DB" }}
-          tickFormatter={formatDate}   /* ← здесь форматируем */
-          interval="preserveStartEnd"  /* не обрезаем крайние подписи */
+          tickFormatter={formatDate}   /* ← format here */
+          interval="preserveStartEnd"  /* do not cut edge labels */
         />
 
         <YAxis
@@ -62,7 +62,7 @@ export default function SparklineChart({ data, full = false }) {
 
         <Tooltip
           isAnimationActive={false}
-          labelFormatter={(v) => `Дата: ${formatDate(v)}`}
+          labelFormatter={(v) => `Date: ${formatDate(v)}`}
           formatter={(v) => [`${v}%`, "Gain"]}
           contentStyle={{
             background: "#ffffff",

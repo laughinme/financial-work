@@ -12,14 +12,14 @@ export default function Log({ onSwitch, onReset }) {
   const [password, setPassword] = useState("");
   const [showPass, setShow]     = useState(false);
 
-  /* ───── Telegram-виджет ───── */
+  /* ───── Telegram widget ───── */
   useEffect(() => {
     window.onTelegramAuth = (user) => {
       linkTelegram(user, true)
         .then(() =>
           alert(`Telegram linked: @${user.username || user.id}`)
         )
-        .catch(() => alert("Не удалось связать Telegram-аккаунт"));
+        .catch(() => alert("Failed to link Telegram account"));
     };
 
     const script = document.createElement("script");
@@ -40,7 +40,7 @@ export default function Log({ onSwitch, onReset }) {
     };
   }, []);
 
-  /* ───── отправка формы ───── */
+  /* ───── form submit ───── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {

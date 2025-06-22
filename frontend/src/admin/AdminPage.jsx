@@ -61,16 +61,16 @@ export default function AdminPage() {
         <table className="settle-table">
           <thead>
             <tr>
-              <th>Портфель</th>
+              <th>Portfolio</th>
               <th>Δ&nbsp;(IN&nbsp;–&nbsp;OUT)</th>
-              <th>5 последних заявок</th>
-              <th>Действия</th>
+              <th>Last 5 orders</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((s) => {
               const delta  = Number(s.delta);
-              const btnTxt = delta >= 0 ? "Пополнить" : "Вывести";
+              const btnTxt = delta >= 0 ? "Deposit" : "Withdraw";
               return (
                 <tr key={s.portfolio_id}>
                   <td>{s.name}</td>

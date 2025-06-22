@@ -44,7 +44,7 @@ export default function SparklineTooltipChart({ data }) {
 
         <Tooltip
           isAnimationActive={false}
-          labelFormatter={(v) => `Дата: ${v}`}
+          labelFormatter={(v) => `Date: ${v}`}
           formatter={(v) => [`${v}%`, 'Gain']}
           contentStyle={{
             backgroundColor: '#ffffff',

@@ -23,12 +23,12 @@ export const getPortfolio = (id) =>
 
 /**
  * GET /api/v1/portfolios/{id}/history
- * @param {number} days – период (≥3)
+ * @param {number} days – period (≥3)
  */
 export const getHistory = (id, days = 30) =>
   http.get(`/api/v1/portfolios/${id}/history?days=${days}`);
 
-/* ---------- действия пользователя ---------- */
+/* ---------- user actions ---------- */
 
 /** POST /api/v1/portfolios/{id}/invest   { amount } */
 export const invest = (id, amount) =>
