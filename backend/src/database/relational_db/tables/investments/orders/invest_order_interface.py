@@ -69,31 +69,39 @@ class InvestOrderInterface:
     
     
     async def portfolio_deposit_withdrawal(self, p_id: int) -> dict[str, Decimal]:
+        """Pending deposits are stored in dollars whereas withdrawals are stored
+        as portfolio units. This helper returns both values in dollars."""
+
         query = (
             select(
                 func.sum(
                     case((InvestOrder.direction == OrderDirection.INVEST, InvestOrder.amount), else_=0)
                 ).label('deposits'),
                 func.sum(
-                    case((InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.amount), else_=0)
-                ).label('withdrawals'),
-                (
-                    func.sum(
-                        case((InvestOrder.direction == OrderDirection.INVEST, InvestOrder.amount), else_=0)
-                    )
-                    -
-                    func.sum(
-                        case((InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.amount), else_=0)
-                    )
-                ).label('delta')
+                    case((InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.units), else_=0)
+                ).label('withdraw_units')
             )
             .where(
                 InvestOrder.status == InvestOrderStatus.PENDING,
                 InvestOrder.portfolio_id == p_id
             )
         )
+
         result = await self.session.execute(query)
-        return dict(result.mappings().first())
+        amounts = result.mappings().first()
+        deposits = amounts['deposits'] or Decimal('0')
+        withdraw_units = amounts['withdraw_units'] or Decimal('0')
+
+        nav_price = await self.session.scalar(
+            select(Portfolio.nav_price).where(Portfolio.id == p_id)
+        )
+        withdrawals = (withdraw_units * nav_price).quantize(Decimal('0.00000001'))
+
+        return {
+            'deposits': deposits,
+            'withdrawals': withdrawals,
+            'delta': deposits - withdrawals,
+        }
     
     
     async def aggregated_orders(
@@ -136,31 +144,27 @@ class InvestOrderInterface:
     
     
     async def settlements_brief(self) -> list[dict]:
+        """Return a short summary of pending settlement orders.
+
+        The ``withdraw`` and ``delta`` values represent dollar amounts. PAYBACK
+        orders are converted from units using the portfolio NAV price.
+        """
+        invest_case = case(
+            (InvestOrder.direction == OrderDirection.INVEST, InvestOrder.amount),
+            else_=0,
+        )
+        withdraw_case = case(
+            (InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.units * Portfolio.nav_price),
+            else_=0,
+        )
+        
         query = (
             select(
                 Portfolio.id.label('portfolio_id'),
                 Portfolio.name,
-                func.sum(
-                    case(
-                        (InvestOrder.direction == OrderDirection.INVEST, InvestOrder.amount),
-                        else_=0,
-                    )
-                ).label("invest"),
-                func.sum(
-                    case(
-                        (InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.amount),
-                        else_=0,
-                    )
-                ).label("withdraw"),
-                (
-                    func.sum(
-                        case((InvestOrder.direction == OrderDirection.INVEST, InvestOrder.amount), else_=0)
-                    )
-                    -
-                    func.sum(
-                        case((InvestOrder.direction == OrderDirection.PAYBACK, InvestOrder.amount), else_=0)
-                    )
-                ).label("delta"),
+                func.sum(invest_case).label("invest"),
+                func.sum(withdraw_case).label("withdraw"),
+                (func.sum(invest_case) - func.sum(withdraw_case)).label("delta"),
             )
             .join(InvestOrder, InvestOrder.portfolio_id == Portfolio.id)
             .where(InvestOrder.status == InvestOrderStatus.PENDING)

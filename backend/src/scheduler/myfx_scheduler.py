@@ -66,8 +66,8 @@ async def myfx_job():
 
                     if day.deposit:
                         units = (day.deposit / nav).quantize(Decimal("0.00000001"))
-                        units_total += units
-                        await h_repo.issue_units(DUMMY_USER_ID, p.id, units, day.deposit, nav)
+                        if await h_repo.issue_units(DUMMY_USER_ID, p.id, units, day.deposit, nav):
+                            units_total += units
                         # holding = await h_repo.user_portfolio_holding(DUMMY_USER_ID, p.id)
                         # await h_repo.insert_snapshot(holding, day.date)
 
@@ -122,7 +122,7 @@ async def myfx_job():
                         p_repo._snapshot_row(p.id, today, nav_price, acc.balance, acc.equity, drawdown)
                     )
                 
-                gain_rows.extend(g_repo._gain_row(p.id, g) for g in gain)
+                    gain_rows.extend(g_repo._gain_row(p.id, g) for g in gain)
             
         await p_repo.bulk_upsert(update_rows)
         await p_repo.bulk_upsert_snapshots(snapshot_rows)
