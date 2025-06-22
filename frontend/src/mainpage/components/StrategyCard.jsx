@@ -92,10 +92,7 @@ export default function StrategyCard({ strategy }) {
             <span className="label">Deposits</span>
             <b>{deposit != null ? fmt(deposit, 0) : "—"}</b>
           </span>
-          <span>
-            <span className="label">Holders</span>
-            <b>{holders != null ? holders : "—"}</b>
-          </span>
+         
           <span>
             <span className="label">Days&nbsp;running</span>
             <b>{duration != null ? duration : "—"}</b>
@@ -104,7 +101,7 @@ export default function StrategyCard({ strategy }) {
 
         <div className="card-bottom">
           <FiUsers size={16} />
-          <span>256 users</span>
+          <b>{holders != null ? holders : "—"}</b>
         </div>
       </div>
     </article>

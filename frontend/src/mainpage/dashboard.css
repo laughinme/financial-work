@@ -96,3 +96,30 @@
 .modal-header h2{margin:0;font-size:1.2rem;}
 .modal-close{background:none;border:none;font-size:1.2rem;cursor:pointer;padding:4px;}
 .modal-body{flex:1;padding:0 18px 18px;}
+
+.alloc-legend{
+  margin:8px 0 0;
+  padding:0;
+  list-style:none;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px 24px;
+  font-size:.8rem;
+}
+.alloc-legend li{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:#374151;
+}
+.alloc-legend .dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+.alloc-legend .pct{
+  margin-left:4px;
+  font-weight:600;
+  color:#111827;
+}
