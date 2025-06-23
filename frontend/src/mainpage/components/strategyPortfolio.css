@@ -9,6 +9,11 @@
   flex-direction:column;
   gap:2rem;
 }
+.range-wrapper {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+}
 
 
 .strat-header{

@@ -1,4 +1,4 @@
-// src/mainpage/dashboard.jsx
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -10,6 +10,7 @@ import Sidebar            from "./components/Sidebar";
 import SparklineChart     from "./components/charts/SparklineChart";
 import HoldingsCarousel   from "./components/HoldingsCarousel";
 import MoneyModal         from "./components/ui/MoneyModal";
+import TimeRangeSelector  from "./components/TimeRangeSelector";
 
 import {
   ResponsiveContainer,
@@ -42,7 +43,15 @@ import { listTransactions } from "../api/transactions";
 
 /* ───── helpers ───── */
 const fmtMoney = (n) => "$" + (+n).toLocaleString();
-const colored = (n) => (+n >= 0 ? "text-green-600" : "text-red-600");
+const colored  = (n) => (+n >= 0 ? "text-green-600" : "text-red-600");
+
+
+const RANGES = [
+  { label: "1M", days: 30 },
+  { label: "3M", days: 90 },
+  { label: "6M", days: 180 },
+  { label: "1Y", days: 360 },
+];
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -56,7 +65,7 @@ export default function DashboardPage() {
 
   /* ─── summary / balance ─── */
   const [summary, setSummary] = useState(null);
-  const [payBal, setPayBal] = useState(null);
+  const [payBal, setPayBal]   = useState(null);
 
   useEffect(() => {
     getSummary().then(setSummary).catch(console.error);
@@ -70,26 +79,30 @@ export default function DashboardPage() {
   }, []);
 
   /* ─── charts ─── */
+ 
+  const [rangePnl, setRangePnl] = useState(30);
+  const [rangeVal, setRangeVal] = useState(30);
+
   const [pnlData, setPnl] = useState([]);
   const [valData, setVal] = useState([]);
-  const [alloc, setAlloc] = useState([]);
+  const [alloc,   setAlloc] = useState([]);
 
   useEffect(() => {
-    getDailyPnl(90)
+    getDailyPnl(rangePnl)
       .then((r) => r.map((d) => ({ date: d.date, pl: +d.pnl || 0 })))
       .then(setPnl)
       .catch(console.error);
 
-    getPortfolioValue(90)
+    getPortfolioValue(rangeVal)
       .then((r) => r.map((d) => ({ date: d.date, value: +d.equity || 0 })))
       .then(setVal)
       .catch(console.error);
 
     getAllocation().then(setAlloc).catch(console.error);
-  }, []);
+  }, [rangePnl, rangeVal]);
 
   /* ─── transactions ─── */
-  const [tx, setTx] = useState(null);
+  const [tx, setTx]       = useState(null);
   const [showAll, setShow] = useState(false);
 
   useEffect(() => {
@@ -126,8 +139,8 @@ export default function DashboardPage() {
   if (!summary) return null;
 
   const totalEquity = +summary.total_equity || 0;
-  const totalPnl = +summary.total_pnl || 0;
-  const todayPnl = +summary.today_pnl || 0;
+  const totalPnl    = +summary.total_pnl    || 0;
+  const todayPnl    = +summary.today_pnl    || 0;
 
   /* ─────────── render ─────────── */
   return (
@@ -213,10 +226,14 @@ export default function DashboardPage() {
                     <Bar
                       dataKey="pl"
                       barSize={10}
-                      isAnimationActive={false}
+                      isAnimationActive={true}
+                      animationDuration={800}
                     >
                       {pnlData.map((d, i) => (
-                        <Cell key={i} fill={d.pl < 0 ? "#EF4444" : "#10B981"} />
+                        <Cell
+                          key={i}
+                          fill={d.pl < 0 ? "#EF4444" : "#10B981"}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
@@ -224,6 +241,11 @@ export default function DashboardPage() {
               ) : (
                 <div className="no-data">No data</div>
               )}
+              <TimeRangeSelector
+                ranges={RANGES}
+                value={rangePnl}
+                onChange={setRangePnl}
+              />
             </div>
 
             {/* Allocation */}
@@ -269,7 +291,6 @@ export default function DashboardPage() {
                         </PieChart>
                       </ResponsiveContainer>
 
-                     
                       <ul className="alloc-legend">
                         {data.map((d) => (
                           <li key={d.id}>
@@ -320,6 +341,11 @@ export default function DashboardPage() {
             ) : (
               <div className="no-data">No data</div>
             )}
+            <TimeRangeSelector
+              ranges={RANGES}
+              value={rangeVal}
+              onChange={setRangeVal}
+            />
           </section>
 
           {/* Holdings & Transactions */}
@@ -342,34 +368,30 @@ export default function DashboardPage() {
             {/* Transactions */}
             <div className="tx-block">
               <h2 className="section-title">Latest Transactions</h2>
-              {tx ? (
-                tx.length ? (
-                  <>
-                    <ul className="tx-list">
-                      {visibleTx.map((t) => (
-                        <li key={t.id}>
-                          <span>{dayjs(t.date).format("DD MMM")}</span>
-                          <span>{t.type}</span>
-                          <span className={colored(t.amount)}>
-                            {(t.amount >= 0 ? "+" : "") +
-                              fmtMoney(Math.abs(t.amount))}
-                          </span>
-                          <span className="tx-note">{t.note}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    {tx.length > 10 && (
-                      <button
-                        className="show-btn"
-                        onClick={() => setShow(!showAll)}
-                      >
-                        {showAll ? "Hide" : "More"}
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <div className="no-data">No data</div>
-                )
+              {visibleTx.length ? (
+                <>
+                  <ul className="tx-list">
+                    {visibleTx.map((t) => (
+                      <li key={t.id}>
+                        <span>{dayjs(t.date).format("DD MMM")}</span>
+                        <span>{t.type}</span>
+                        <span className={colored(t.amount)}>
+                          {(t.amount >= 0 ? "+" : "") +
+                            fmtMoney(Math.abs(t.amount))}
+                        </span>
+                        <span className="tx-note">{t.note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {tx.length > 10 && (
+                    <button
+                      className="show-btn"
+                      onClick={() => setShow(!showAll)}
+                    >
+                      {showAll ? "Hide" : "More"}
+                    </button>
+                  )}
+                </>
               ) : (
                 <div className="no-data">Loading…</div>
               )}
@@ -382,10 +404,7 @@ export default function DashboardPage() {
               className="modal-overlay"
               onClick={() => setSpark({ open: false })}
             >
-              <div
-                className="modal-box"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <div className="modal-box" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h2>{sparkModal.title}</h2>
                   <button

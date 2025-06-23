@@ -10,6 +10,7 @@ import BalanceEquityChart from './charts/BalanceEquityChart';
 import SparklineChart from './charts/SparklineChart';
 import MoneyModal from './ui/MoneyModal';
 import ChartModal from './pages/ChartModal';
+import TimeRangeSelector from './TimeRangeSelector';
 
 import {
   ResponsiveContainer,
@@ -30,7 +31,6 @@ import {
   getHistory,
 } from '../../api/portfolios';
 
-
 const CHART_HEIGHT = 240;
 const fmt = (n, d = 2) =>
   Number(n).toLocaleString('en-US', {
@@ -38,6 +38,13 @@ const fmt = (n, d = 2) =>
     maximumFractionDigits: d,
   });
 
+
+const RANGES = [
+  { label: '1M', days: 30 },
+  { label: '3M', days: 90 },
+  { label: '6M', days: 180 },
+  { label: '1Y', days: 360 },
+];
 
 export default function StrategyPortfolioPage() {
   const { id } = useParams();
@@ -48,9 +55,49 @@ export default function StrategyPortfolioPage() {
   if (!strat) return <div style={{ padding: 32 }}>Loading…</div>;
 
 
-  const [charts, setCharts] = useState(null);
-  const [moneyModal, setMoneyModal] = useState({ open: false, type: null });
+  const [rangeBE, setRangeBE] = useState(30);
+  const [rangeDD, setRangeDD] = useState(30);
+  const [rangePL, setRangePL] = useState(30);
 
+
+  const [balanceData, setBalanceData] = useState([]);
+  const [drawdownRaw, setDrawdownRaw] = useState([]);
+  const [plData, setPlData] = useState([]);
+
+  
+  useEffect(() => {
+    getHistory(id, rangeBE)
+      .then((r) => setBalanceData(r.balance_equity || []))
+      .catch(console.error);
+  }, [id, rangeBE]);
+
+
+  useEffect(() => {
+    getHistory(id, rangeDD)
+      .then((r) =>
+        setDrawdownRaw(
+          (r.drawdown || []).map((d) => ({ ...d, drawdown: -+d.drawdown }))
+        )
+      )
+      .catch(console.error);
+  }, [id, rangeDD]);
+
+
+  useEffect(() => {
+    getHistory(id, rangePL)
+      .then((r) =>
+        setPlData(
+          (r.sparkline || []).map((d) => ({
+            date: d.date,
+            gain_percent: d.gain_percent,
+          }))
+        )
+      )
+      .catch(console.error);
+  }, [id, rangePL]);
+
+
+  const [moneyModal, setMoneyModal] = useState({ open: false, type: null });
 
   const [popup, setPopup] = useState({ open: false, title: '', chart: null });
   const openChart = useCallback(
@@ -58,14 +105,6 @@ export default function StrategyPortfolioPage() {
     []
   );
   const closeChart = () => setPopup({ open: false, title: '', chart: null });
-
-
-  useEffect(() => {
-    getHistory(id, 90)
-      .then(setCharts)
-      .catch(console.error);
-  }, [id]);
-
 
   const handleInvest = async (usd) => {
     await investApi(id, usd);
@@ -82,17 +121,6 @@ export default function StrategyPortfolioPage() {
   ));
   const NoData = () => <div className="nodata">No&nbsp;data</div>;
 
- 
-  const balanceData = charts?.balance_equity || [];
-  const drawdownRaw =
-    charts?.drawdown?.map((d) => ({ ...d, drawdown: -+d.drawdown })) || [];
-  const plData =
-    charts?.sparkline?.map((d) => ({
-      date: d.date,
-      gain_percent: d.gain_percent,
-    })) || [];
-
-
   const ddMin = Math.min(...drawdownRaw.map((d) => d.drawdown), 0);
   const drawdownDomain = [ddMin * 1.05, 0];
 
@@ -102,7 +130,6 @@ export default function StrategyPortfolioPage() {
         <Sidebar />
 
         <main className="strat-page">
-       
           <header className="strat-header">
             <button className="back-btn" onClick={() => navigate(-1)}>
               <FiChevronLeft size={18} /> Back
@@ -163,9 +190,9 @@ export default function StrategyPortfolioPage() {
             </div>
           </section>
 
-    
+          {/* Charts */}
           <section className="chart-row">
-        
+            {/* Balance / Equity */}
             <div
               className="chart-box clickable"
               onClick={() =>
@@ -183,8 +210,19 @@ export default function StrategyPortfolioPage() {
                   <NoData />
                 )}
               </div>
+              <div
+                className="range-wrapper"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <TimeRangeSelector
+                  ranges={RANGES}
+                  value={rangeBE}
+                  onChange={setRangeBE}
+                />
+              </div>
             </div>
 
+            {/* Drawdown */}
             <div
               className="chart-box clickable"
               onClick={() =>
@@ -217,7 +255,13 @@ export default function StrategyPortfolioPage() {
                           `Date: ${dayjs(d).format('DD MMM')}`
                         }
                       />
-                      <Bar dataKey="drawdown" baseValue={0} barSize={4}>
+                      <Bar
+                        dataKey="drawdown"
+                        baseValue={0}
+                        barSize={4}
+                        isAnimationActive={true}
+                        animationDuration={800}
+                      >
                         {drawdownRaw.map((_, i) => (
                           <Cell key={i} fill="#EF4444" />
                         ))}
@@ -257,7 +301,13 @@ export default function StrategyPortfolioPage() {
                           `Date: ${dayjs(d).format('DD MMM')}`
                         }
                       />
-                      <Bar dataKey="drawdown" baseValue={0} barSize={4}>
+                      <Bar
+                        dataKey="drawdown"
+                        baseValue={0}
+                        barSize={4}
+                        isAnimationActive={true}
+                        animationDuration={800}
+                      >
                         {drawdownRaw.map((_, i) => (
                           <Cell key={i} fill="#EF4444" />
                         ))}
@@ -268,9 +318,19 @@ export default function StrategyPortfolioPage() {
                   <NoData />
                 )}
               </div>
+              <div
+                className="range-wrapper"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <TimeRangeSelector
+                  ranges={RANGES}
+                  value={rangeDD}
+                  onChange={setRangeDD}
+                />
+              </div>
             </div>
 
-      
+            {/* Daily P/L */}
             <div
               className="chart-box clickable"
               onClick={() =>
@@ -279,12 +339,28 @@ export default function StrategyPortfolioPage() {
             >
               <h3 className="chart-title">Daily P/L</h3>
               <div className="chart-wrapper" style={{ height: CHART_HEIGHT }}>
-                {plData.length ? <SparklineChart data={plData} full /> : <NoData />}
+                {plData.length ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <SparklineChart data={plData} full />
+                  </ResponsiveContainer>
+                ) : (
+                  <NoData />
+                )}
+              </div>
+              <div
+                className="range-wrapper"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <TimeRangeSelector
+                  ranges={RANGES}
+                  value={rangePL}
+                  onChange={setRangePL}
+                />
               </div>
             </div>
           </section>
 
-      
+          {/* Strategy description */}
           <section className="description">
             <h3>Strategy description</h3>
             <div
@@ -297,6 +373,7 @@ export default function StrategyPortfolioPage() {
         </main>
       </div>
 
+      {/* Invest/Withdraw modal */}
       <MoneyModal
         open={moneyModal.open}
         title={moneyModal.type === 'withdraw' ? 'Withdraw units' : 'Invest USD'}
@@ -307,7 +384,7 @@ export default function StrategyPortfolioPage() {
         onSubmit={moneyModal.type === 'withdraw' ? handleWithdraw : handleInvest}
       />
 
-      
+      {/* Full-screen chart modal */}
       <ChartModal open={popup.open} title={popup.title} onClose={closeChart}>
         {popup.chart}
       </ChartModal>

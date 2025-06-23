@@ -20,7 +20,6 @@ const fmtNum = (v) => {
   return v.toString();
 };
 
-
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
 
@@ -36,12 +35,9 @@ const CustomTooltip = ({ active, payload, label }) => {
         lineHeight   : 1.35,
       }}
     >
-
       <div style={{ marginBottom: 6, fontWeight: 600 }}>
         {dayjs(label).format('DD MMM YYYY')}
       </div>
-
-
       {payload
         .filter((p) => p.dataKey !== 'equityArea')
         .map((p) => (
@@ -55,7 +51,6 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function BalanceEquityChart({ data = [], full = false }) {
- 
   const prepared = useMemo(
     () =>
       data.map((d) => {
@@ -64,8 +59,8 @@ export default function BalanceEquityChart({ data = [], full = false }) {
           ...d,
           ts         : new Date(d.date).getTime(),
           balance    : +d.balance,
-          equity     : equityVal, 
-          equityArea : equityVal, 
+          equity     : equityVal,
+          equityArea : equityVal,
         };
       }),
     [data]
@@ -81,7 +76,6 @@ export default function BalanceEquityChart({ data = [], full = false }) {
       >
         <CartesianGrid stroke="#E5E7EB" strokeDasharray="3 3" />
 
- 
         <XAxis
           dataKey="ts"
           type="number"
@@ -96,7 +90,6 @@ export default function BalanceEquityChart({ data = [], full = false }) {
           minTickGap={20}
         />
 
-    
         <YAxis
           tickFormatter={fmtNum}
           tickLine={false}
@@ -105,13 +98,10 @@ export default function BalanceEquityChart({ data = [], full = false }) {
           tickMargin={12}
         />
 
-       
         <Tooltip content={<CustomTooltip />} />
 
-        
         <Legend verticalAlign="top" height={28} iconSize={12} />
 
-    
         <Area
           type="monotone"
           dataKey="equityArea"
@@ -120,10 +110,10 @@ export default function BalanceEquityChart({ data = [], full = false }) {
           fillOpacity={0.08}
           name=""
           legendType="none"
-          isAnimationActive={false}
+          isAnimationActive={true}
+          animationDuration={800}
         />
 
-  
         <Line
           type="monotone"
           dataKey="balance"
@@ -131,7 +121,8 @@ export default function BalanceEquityChart({ data = [], full = false }) {
           strokeWidth={2}
           dot={false}
           name="Balance"
-          isAnimationActive={false}
+          isAnimationActive={true}
+          animationDuration={800}
         />
         <Line
           type="monotone"
@@ -140,7 +131,8 @@ export default function BalanceEquityChart({ data = [], full = false }) {
           strokeWidth={2}
           dot={false}
           name="Equity"
-          isAnimationActive={false}
+          isAnimationActive={true}
+          animationDuration={800}
         />
       </ComposedChart>
     </ResponsiveContainer>
