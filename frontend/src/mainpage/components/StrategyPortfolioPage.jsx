@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiZap, FiChevronLeft } from 'react-icons/fi';
@@ -26,11 +27,10 @@ import { usePortfolio } from '../../contexts/PortfolioContext';
 import {
   invest as investApi,
   withdraw as withdrawApi,
-  getPortfolio,
   getHistory,
 } from '../../api/portfolios';
 
-/* ───────────────────────── helpers ───────────────────────── */
+
 const CHART_HEIGHT = 240;
 const fmt = (n, d = 2) =>
   Number(n).toLocaleString('en-US', {
@@ -38,7 +38,7 @@ const fmt = (n, d = 2) =>
     maximumFractionDigits: d,
   });
 
-/* ───────────────────────── component ───────────────────────── */
+
 export default function StrategyPortfolioPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -47,11 +47,11 @@ export default function StrategyPortfolioPage() {
   const strat = strategies.find((s) => s.id.toString() === id);
   if (!strat) return <div style={{ padding: 32 }}>Loading…</div>;
 
-  /* state */
+
   const [charts, setCharts] = useState(null);
   const [moneyModal, setMoneyModal] = useState({ open: false, type: null });
 
-  /* big-chart pop-up */
+
   const [popup, setPopup] = useState({ open: false, title: '', chart: null });
   const openChart = useCallback(
     (title, chart) => setPopup({ open: true, title, chart }),
@@ -59,21 +59,14 @@ export default function StrategyPortfolioPage() {
   );
   const closeChart = () => setPopup({ open: false, title: '', chart: null });
 
-  /* load history */
+
   useEffect(() => {
     getHistory(id, 90)
       .then(setCharts)
       .catch(console.error);
   }, [id]);
 
-  /* refresh portfolio at mount */
-  useEffect(() => {
-    getPortfolio(id)
-      .then(() => refreshOne(+id))
-      .catch(() => {});
-  }, [id, refreshOne]);
 
-  /* Invest / Withdraw handlers */
   const handleInvest = async (usd) => {
     await investApi(id, usd);
     await refreshOne(+id);
@@ -89,7 +82,7 @@ export default function StrategyPortfolioPage() {
   ));
   const NoData = () => <div className="nodata">No&nbsp;data</div>;
 
-  /* chart data */
+ 
   const balanceData = charts?.balance_equity || [];
   const drawdownRaw =
     charts?.drawdown?.map((d) => ({ ...d, drawdown: -+d.drawdown })) || [];
@@ -99,18 +92,17 @@ export default function StrategyPortfolioPage() {
       gain_percent: d.gain_percent,
     })) || [];
 
-  /*Drawdown */
-  const ddMin = Math.min(...drawdownRaw.map((d) => d.drawdown), 0);
-  const drawdownDomain = [ddMin * 1.05, 0]; 
 
-  /* ───────────────────────── render ───────────────────────── */
+  const ddMin = Math.min(...drawdownRaw.map((d) => d.drawdown), 0);
+  const drawdownDomain = [ddMin * 1.05, 0];
+
   return (
     <>
       <div className="layout">
         <Sidebar />
 
         <main className="strat-page">
-          {/* ---------- Header ---------- */}
+       
           <header className="strat-header">
             <button className="back-btn" onClick={() => navigate(-1)}>
               <FiChevronLeft size={18} /> Back
@@ -140,7 +132,7 @@ export default function StrategyPortfolioPage() {
             </button>
           </header>
 
-          {/* ---------- KPI ---------- */}
+          {/* KPI */}
           <section className="kpi-grid">
             <div className="kpi-card">
               <p className="kpi-label">Equity</p>
@@ -171,15 +163,16 @@ export default function StrategyPortfolioPage() {
             </div>
           </section>
 
-          {/* ---------- Charts ---------- */}
+    
           <section className="chart-row">
-            {/* Balance / Equity (clickable) */}
+        
             <div
               className="chart-box clickable"
               onClick={() =>
-                openChart('Balance / Equity', (
+                openChart(
+                  'Balance / Equity',
                   <BalanceEquityChart data={balanceData} full />
-                ))
+                )
               }
             >
               <h3 className="chart-title">Balance / Equity</h3>
@@ -192,7 +185,6 @@ export default function StrategyPortfolioPage() {
               </div>
             </div>
 
-            {/* Drawdown (clickable) */}
             <div
               className="chart-box clickable"
               onClick={() =>
@@ -278,7 +270,7 @@ export default function StrategyPortfolioPage() {
               </div>
             </div>
 
-            {/* Daily P/L (clickable) */}
+      
             <div
               className="chart-box clickable"
               onClick={() =>
@@ -292,7 +284,7 @@ export default function StrategyPortfolioPage() {
             </div>
           </section>
 
-          {/* ---------- Description ---------- */}
+      
           <section className="description">
             <h3>Strategy description</h3>
             <div
@@ -305,7 +297,6 @@ export default function StrategyPortfolioPage() {
         </main>
       </div>
 
-      {/* Money-modal */}
       <MoneyModal
         open={moneyModal.open}
         title={moneyModal.type === 'withdraw' ? 'Withdraw units' : 'Invest USD'}
@@ -316,7 +307,7 @@ export default function StrategyPortfolioPage() {
         onSubmit={moneyModal.type === 'withdraw' ? handleWithdraw : handleInvest}
       />
 
-      {/* full-screen chart pop-up */}
+      
       <ChartModal open={popup.open} title={popup.title} onClose={closeChart}>
         {popup.chart}
       </ChartModal>
