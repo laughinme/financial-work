@@ -1,5 +1,6 @@
 
 import React, { useMemo } from 'react';
+import dayjs from 'dayjs';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -11,8 +12,6 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
-import dayjs from 'dayjs';
-
 
 const fmtNum = (v) => {
   if (v === 0) return '0';
@@ -21,16 +20,55 @@ const fmtNum = (v) => {
   return v.toString();
 };
 
-export default function BalanceEquityChart({ data, full = false }) {
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div
+      style={{
+        background   : '#fff',
+        border       : '1px solid #e5e7eb',
+        borderRadius : 10,
+        padding      : '0.75rem 1rem',
+        fontSize     : 16,
+        boxShadow    : '0 4px 12px rgba(0,0,0,.08)',
+        lineHeight   : 1.35,
+      }}
+    >
+
+      <div style={{ marginBottom: 6, fontWeight: 600 }}>
+        {dayjs(label).format('DD MMM YYYY')}
+      </div>
+
+
+      {payload
+        .filter((p) => p.dataKey !== 'equityArea')
+        .map((p) => (
+          <div key={p.dataKey} style={{ color: p.color, fontWeight: 600 }}>
+            {p.name}&nbsp;:&nbsp;
+            {(+p.value).toLocaleString('en-US')}
+          </div>
+        ))}
+    </div>
+  );
+};
+
+export default function BalanceEquityChart({ data = [], full = false }) {
  
   const prepared = useMemo(
-    () => data.map((d) => ({
-      ...d,
-      ts: new Date(d.date).getTime(),
-      balance: +d.balance,
-      equity : +d.equity,
-    })),
-    [data],
+    () =>
+      data.map((d) => {
+        const equityVal = +d.equity;
+        return {
+          ...d,
+          ts         : new Date(d.date).getTime(),
+          balance    : +d.balance,
+          equity     : equityVal, 
+          equityArea : equityVal, 
+        };
+      }),
+    [data]
   );
 
   if (!prepared.length) return null;
@@ -43,11 +81,14 @@ export default function BalanceEquityChart({ data, full = false }) {
       >
         <CartesianGrid stroke="#E5E7EB" strokeDasharray="3 3" />
 
+ 
         <XAxis
           dataKey="ts"
           type="number"
           domain={['dataMin', 'dataMax']}
-          tickFormatter={(ts) => dayjs(ts).format(full ? 'DD MMM YY' : 'DD MMM')}
+          tickFormatter={(ts) =>
+            dayjs(ts).format(full ? 'DD MMM YY' : 'DD MMM')
+          }
           tick={{ fontSize: 12 }}
           tickLine={false}
           axisLine={{ stroke: '#D1D5DB' }}
@@ -55,31 +96,34 @@ export default function BalanceEquityChart({ data, full = false }) {
           minTickGap={20}
         />
 
+    
         <YAxis
           tickFormatter={fmtNum}
           tickLine={false}
           axisLine={{ stroke: '#D1D5DB' }}
           tick={{ fontSize: 12 }}
-          tickMargin={10}
+          tickMargin={12}
         />
 
-        <Tooltip
-          formatter={(v) => (+v).toLocaleString('en-US')}
-          labelFormatter={(ts) => dayjs(ts).format('DD MMM YYYY')}
-        />
+       
+        <Tooltip content={<CustomTooltip />} />
 
-        <Legend verticalAlign="top" height={24} iconSize={10} />
+        
+        <Legend verticalAlign="top" height={28} iconSize={12} />
 
-        {/* Заливка под Equity */}
+    
         <Area
           type="monotone"
-          dataKey="equity"
+          dataKey="equityArea"
           stroke="none"
           fill="#2563EB"
           fillOpacity={0.08}
+          name=""
+          legendType="none"
+          isAnimationActive={false}
         />
 
-        {/* Линии */}
+  
         <Line
           type="monotone"
           dataKey="balance"
@@ -87,6 +131,7 @@ export default function BalanceEquityChart({ data, full = false }) {
           strokeWidth={2}
           dot={false}
           name="Balance"
+          isAnimationActive={false}
         />
         <Line
           type="monotone"
@@ -95,6 +140,7 @@ export default function BalanceEquityChart({ data, full = false }) {
           strokeWidth={2}
           dot={false}
           name="Equity"
+          isAnimationActive={false}
         />
       </ComposedChart>
     </ResponsiveContainer>
