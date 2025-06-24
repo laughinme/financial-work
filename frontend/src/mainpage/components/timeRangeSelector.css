@@ -1,0 +1,13 @@
+.range-bar{
+    display:flex; gap:4px; margin-bottom:4px;
+  }
+  .range-btn{
+    flex:1 1 0; min-width:42px; padding:2px 4px;
+    font-size:.75rem; border:1px solid #d1d5db; border-radius:4px;
+    background:#fff; color:#374151; cursor:pointer;
+    transition:background .15s;
+  }
+  .range-btn:hover:not(:disabled){background:#f3f4f6;}
+  .range-btn.active{background:#4f46e5;color:#fff;border-color:#4f46e5;}
+  .range-btn:disabled{opacity:.35;cursor:default;}
+  

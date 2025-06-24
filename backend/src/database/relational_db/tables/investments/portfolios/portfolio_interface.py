@@ -1,14 +1,13 @@
+from contextlib import asynccontextmanager
 from decimal import Decimal
-from datetime import  datetime, UTC, date
-from sqlalchemy import select, update
+from datetime import datetime, UTC, date, timedelta
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
 
 from .portfolios_table import Portfolio
 from .portfolio_snapshots_table import PortfolioSnapshot
-from ..holdings import Holding
-from .daily_gains_table import DailyGain
-from domain.myfxbook import AccountSchema, DayGain
+from domain.myfxbook import AccountSchema
 
 
 class PortfolioInterface:
@@ -17,7 +16,12 @@ class PortfolioInterface:
         
     # helpers
     @staticmethod
-    def _portfolio_row(portfolio_id: int, acc: AccountSchema, nav_price: Decimal) -> dict:
+    def _portfolio_row(
+        portfolio_id: int,
+        acc: AccountSchema,
+        nav_price: Decimal,
+        units_total: Decimal | None = None,
+    ) -> dict:
         p_dict = dict(
             oid_myfx = acc.id,
             account_number = acc.account_id,
@@ -29,13 +33,20 @@ class PortfolioInterface:
             balance = acc.balance,
             equity = acc.equity,
             drawdown = acc.drawdown,
+            deposits = acc.deposits,
+            withdrawals = acc.withdrawals,
+            invitation_url = acc.invitation_url,
             gain_percent = acc.gain,
             net_profit = acc.profit,
             first_trade_at = acc.first_trade_date,
-            last_sync = datetime.now(UTC)
+            last_sync = datetime.now(UTC),
+            last_update_myfx = acc.last_update_date
         )
         if portfolio_id:
             p_dict['id'] = portfolio_id
+        
+        if units_total is not None:
+            p_dict['units_total'] = units_total
             
         return p_dict
     
@@ -55,15 +66,6 @@ class PortfolioInterface:
             balance = balance,
             equity = equity,
             drawdown = drawdown
-        )
-
-    @staticmethod
-    def _gain_row(portfolio_id: int, gain: DayGain) -> dict:
-        return dict(
-            portfolio_id = portfolio_id,
-            date = gain.date,
-            gain_pct = gain.value,
-            profit = gain.profit,
         )
 
 
@@ -96,79 +98,86 @@ class PortfolioInterface:
         return portfolio
     
     
+    @asynccontextmanager
+    async def get_isolated(self, portfolio_id: int):
+        p = await self.session.get(Portfolio, portfolio_id, with_for_update=True)
+        yield p
+    
+    
     async def list_all(self, size: int = 0, page: int = 0) -> list[Portfolio]:
         portfolios = await self.session.scalars(
             select(Portfolio)
             # .where(Portfolio.active == True)
             .offset((page - 1) * size)
             .limit(size or None)
+            .order_by(Portfolio.id)
         )
         return portfolios.all()
-
+        
+        
+    async def get_snapshot_history(
+        self, portfolio_id: int, days: int
+    ) -> tuple[list[dict], list[dict]]:
+        query = (
+            select(
+                PortfolioSnapshot.snapshot_date,
+                PortfolioSnapshot.balance,
+                PortfolioSnapshot.equity,
+                PortfolioSnapshot.drawdown
+            )
+            .where(
+                PortfolioSnapshot.portfolio_id == portfolio_id,
+                PortfolioSnapshot.snapshot_date >= date.today() - timedelta(days=days)
+            )
+            .order_by(PortfolioSnapshot.snapshot_date)
+        )
+        result = await self.session.execute(query)
+        rows = result.all()
+        
+        balance_equity = []
+        drawdown_hist = []
+        for _date, balance, equity, drawdown in rows:
+            balance_equity.append({'date': _date, 'balance': balance, 'equity': equity})
+            drawdown_hist.append({'date': _date, 'drawdown': drawdown})
+        
+        return balance_equity, drawdown_hist
+    
 
     async def bulk_insert_from_accounts(self, accounts: list[AccountSchema]) -> list[Portfolio]:
-        rows = [self._portfolio_row(None, a, Decimal('1')) for a in accounts]
+        rows = [self._portfolio_row(None, a, Decimal('1'), Decimal('0')) for a in accounts]
         result = await self.session.execute(
             insert(Portfolio).values(rows).returning(Portfolio)
         )
         return list(result.scalars().all())
 
 
-    async def bulk_upsert(self, rows: list[dict]):
+    async def bulk_upsert(self, rows: list[dict], chunk_size: int = 1000):
         if not rows:
             return
-        query = insert(Portfolio).values(rows)
-        query = query.on_conflict_do_update(
-            index_elements=["oid_myfx"],
-            set_={c: getattr(query.excluded, c) for c in rows[0] if c != "id"}
-        )
-        await self.session.execute(query)
-
-    
-    async def bulk_upsert_snapshots(self, rows: list[dict]):
-        if not rows:
-            return
-        query = insert(PortfolioSnapshot).values(rows)
-        query = query.on_conflict_do_nothing(
-            index_elements=["portfolio_id", "snapshot_date"]
-        )
-        # query = query.on_conflict_do_update(
-        #     index_elements=["portfolio_id", "snapshot_date"],
-        #     set_= {
-        #         "nav_price": query.excluded.nav_price,
-        #         "balance": query.excluded.balance,
-        #         "equity": query.excluded.equity,
-        #         "drawdown": query.excluded.drawdown,
-        #         "updated_at": datetime.now(UTC)
-        #     }
-        # )
-        await self.session.execute(query)
-
-    
-    async def bulk_upsert_gains(self, rows: list[dict]):
-        if not rows:
-            return
-        query = insert(DailyGain).values(rows)
-        query = query.on_conflict_do_update(
-            index_elements=["portfolio_id", "date"],
-            set_= {
-                "gain_pct": query.excluded.gain_pct,
-                "profit":   query.excluded.profit,
-            }
-        )
-        await self.session.execute(query)
-        
-    
-    async def revalue_holdings(self):
-        query = (
-            update(Holding)
-            .values(
-                current_value = Holding.units * Portfolio.nav_price,
-                pnl = (Holding.units * Portfolio.nav_price)
-                - Holding.total_deposit
-                + Holding.total_withdraw,
+        for i in range(0, len(rows), chunk_size):
+            batch = rows[i:i + chunk_size]
+            query = insert(Portfolio).values(batch)
+            query = query.on_conflict_do_update(
+                index_elements=["oid_myfx"],
+                set_={c: getattr(query.excluded, c) for c in batch[0] if c != "id"}
             )
-            .where(Holding.portfolio_id == Portfolio.id)
-        )
+            await self.session.execute(query)
 
-        await self.session.execute(query)
+    
+    async def bulk_upsert_snapshots(self, rows: list[dict], chunk_size: int = 1000):
+        if not rows:
+            return
+        for i in range(0, len(rows), chunk_size):
+            batch = rows[i:i + chunk_size]
+            query = insert(PortfolioSnapshot).values(batch)
+            query = query.on_conflict_do_update(
+                index_elements=["portfolio_id", "snapshot_date"],
+                set_={
+                    "nav_price": query.excluded.nav_price,
+                    "balance": query.excluded.balance,
+                    "equity": query.excluded.equity,
+                    "drawdown": query.excluded.drawdown,
+                    "updated_at": datetime.now(UTC),
+                },
+            )
+            await self.session.execute(query)

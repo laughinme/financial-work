@@ -1,0 +1,107 @@
+.card-strategy {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.18s, transform 0.18s;
+}
+.card-strategy:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+/* ───────── COVER ───────── */
+.card-strategy__cover {
+  position: relative;
+  height: 180px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sparkline-container {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  bottom: 0;
+  width: 55%;
+  z-index: 0;
+}
+
+.cover-content {
+  position: absolute;
+  inset: 0;
+  padding: 0.6rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 1;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  backdrop-filter: blur(2px);
+  font-size: 0.75rem;
+  color: #ffffff;
+}
+.pill-text { font-weight: 500; margin: 0 0.2rem; }
+
+.main-text { margin-top: 0.2rem; color: #ffffff; }
+.forecast   { font-size: 1.15rem; font-weight: 700; margin: 0; }
+.since      { font-size: 0.75rem; color: #34d399; margin: 0.2rem 0 0.6rem; }
+
+.cover-title {
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ───────── BODY ───────── */
+.card-strategy__body {
+  padding: 1.1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.metrics-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  font-size: 0.75rem;
+  margin: 0 0 1rem;
+}
+.metrics-row .label { color: #6b7280; margin-right: 0.25rem; }
+
+.card-bottom {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.card-link { display: block; text-decoration: none; color: inherit; }
+
+/* ─────────  ADAPTIVE  ───────── */
+@media (max-width: 640px) {
+  .card-strategy__cover { height: 200px; }
+
+  /* график на узких экранах опускается вниз и занимает 100 % ширины */
+  .sparkline-container {
+    position: static;
+    width: 100%;
+    height: 60px;
+    margin-top: 0.5rem;
+  }
+
+  /* чуть увеличим внутренние отступы, чтобы текст не наезжал на график */
+  .cover-content { padding-bottom: 3.2rem; }
+}

@@ -20,7 +20,7 @@ config = Config()
 
 
 class MyFXService:
-    BASE_URL = 'https://www.myfxbook.com/api'
+    BASE_URL = config.MOCK_URL
     
     def __init__(
         self,
@@ -82,11 +82,12 @@ class MyFXService:
     async def get_accounts(self) -> AccountsSchema:
         cache_key = "myfx:accounts"
         if raw := await self.cache_repo.get(cache_key):
-            return AccountsSchema.model_validate_json(raw)
+            # return AccountsSchema.model_validate_json(raw)
+            pass
         
         session = await self._get_session()
         data = await self._call('/get-my-accounts.json', params={'session': session})
-        await self.cache_repo.set(cache_key, json.dumps(data), ttl=15*60)
+        # await self.cache_repo.set(cache_key, json.dumps(data), ttl=15*60)
         
         return AccountsSchema.model_validate(data)
 
@@ -96,14 +97,15 @@ class MyFXService:
     ) -> DataDailySchema:
         cache_key = f"myfx:data_daily:{account_id}:{start}:{end}"
         if (raw := await self.cache_repo.get(cache_key)):
-            return DataDailySchema.model_validate_json(raw)
+            # return DataDailySchema.model_validate_json(raw)
+            pass
         
         session = await self._get_session()
         data = await self._call(
             '/get-data-daily.json',
             params={'session': session, 'id': account_id, 'start': start, 'end': end}
         )
-        await self.cache_repo.set(cache_key, json.dumps(data), ttl=60*60)
+        # await self.cache_repo.set(cache_key, json.dumps(data), ttl=60*60)
         
         return DataDailySchema.model_validate(data)
     
@@ -122,14 +124,15 @@ class MyFXService:
     ) -> DailyGainSchema:
         cache_key = f'myfx:daily_gain:{account_id}:{start}:{end}'
         if raw := await self.cache_repo.get(cache_key):
-            return DailyGainSchema.model_validate_json(raw)
+            # return DailyGainSchema.model_validate_json(raw)
+            pass
             
         session = await self._get_session()
         data = await self._call(
             '/get-daily-gain.json',
             params={'session': session, 'id': account_id, 'start': start, 'end': end}
         )
-        await self.cache_repo.set(cache_key, json.dumps(data), ttl=15*60)
+        # await self.cache_repo.set(cache_key, json.dumps(data), ttl=15*60)
         
         return DailyGainSchema.model_validate(data)
     

@@ -1,0 +1,70 @@
+
+   .profile-container{
+    width:50vw;
+    max-width:900px;
+    margin:40px auto 0;
+  }
+  
+
+  .header-profile{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:32px;
+  }
+  .header-profile .spacer{ flex:1; }
+  
+
+  .btn-pill{
+    border:none;
+    border-radius:9999px;
+    padding:8px 22px;
+    font-size:0.9rem;
+    font-weight:500;
+    cursor:pointer;
+    box-shadow:0 1px 4px rgba(0,0,0,.07);
+    transition:transform .14s, box-shadow .14s;
+  }
+  .btn-pill:active{ transform:scale(.96); }
+  
+  .btn-primary{
+    background:#2563eb;
+    color:#fff;
+  }
+  .btn-primary:hover{
+    box-shadow:0 4px 14px rgba(37,99,235,.25);
+  }
+  
+  .btn-danger{
+    background:#ef4444;
+    color:#fff;
+  }
+  .btn-danger:hover{
+    box-shadow:0 4px 14px rgba(239,68,68,.25);
+  }
+  
+
+  .kpi-inline{
+    display:flex;
+    gap:32px;
+    flex-wrap:wrap;
+    margin-bottom:32px;
+    font-size:1.05rem;
+  }
+  .kpi-inline span b{
+    margin-left:6px;
+    font-size:1.15rem;
+  }
+  
+  
+  .show-btn{
+    background:none;
+    border:none;
+    color:#2563eb;
+    cursor:pointer;
+    padding:6px 8px;
+    margin-top:8px;
+    font-size:0.84rem;
+  }
+  .show-btn:hover{text-decoration:underline;}
+  

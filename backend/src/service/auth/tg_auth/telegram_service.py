@@ -1,5 +1,6 @@
 import hmac
 import hashlib
+from datetime import datetime, UTC
 
 from fastapi import Request
 from sqlalchemy.exc import IntegrityError
@@ -7,11 +8,9 @@ from sqlalchemy.exc import IntegrityError
 from database.relational_db import (
     UserInterface,
     User,
-    TelegramInterface,
-    TelegramProvider,
-    AuthProvidersInterface,
-    AuthProvider,
-    UoW
+    IdentityInterface,
+    Identity,
+    UoW,
 )
 from domain.users import TelegramAuthSchema, Provider
 from core.config import Config
@@ -25,14 +24,12 @@ config = Config()
 class TelegramService:
     def __init__(
         self,
-        tg_repo: TelegramInterface,
-        auth_repo: AuthProvidersInterface,
+        identity_repo: IdentityInterface,
         user_repo: UserInterface,
         session_service: SessionService,
-        uow: UoW
+        uow: UoW,
     ):
-        self.tg_repo = tg_repo
-        self.auth_repo = auth_repo
+        self.identity_repo = identity_repo
         self.user_repo = user_repo
         self.session_service = session_service
         self.uow = uow
@@ -80,20 +77,21 @@ class TelegramService:
         identifier = str(payload.id)
         
         async with self.uow:
-            user = await self.tg_repo.get_user_by_tg(identifier)
+            user = await self.identity_repo.get_user_by_provider(Provider.TELEGRAM, identifier)
             if user is None:
                 user = self.user_repo.create()
-                auth = AuthProvider(
+                identity = Identity(
                     provider=Provider.TELEGRAM,
-                    provider_user_id=identifier,
-                    telegram=TelegramProvider(
-                        first_name=payload.first_name,
-                        last_name=payload.last_name,
-                        username=payload.username,
-                        photo_url=payload.photo_url,
-                    )
+                    external_id=identifier,
+                    meta={
+                        "first_name": payload.first_name,
+                        "last_name": payload.last_name,
+                        "username": payload.username,
+                        "photo_url": payload.photo_url,
+                    },
+                    # last_login_at=datetime.now(UTC)
                 )
-                user.providers.append(auth)
+                user.identities.append(identity)
             await self.user_repo.add(user)
             self._fill_profile_from_tg(user, payload)
         
@@ -113,18 +111,19 @@ class TelegramService:
         
         identifier = str(payload.id)
         
-        auth = AuthProvider(
+        identity = Identity(
             user_id=user.id,
             provider=Provider.TELEGRAM,
-            provider_user_id=identifier,
-            telegram=TelegramProvider(
-                first_name=payload.first_name,
-                last_name=payload.last_name,
-                username=payload.username,
-                photo_url=payload.photo_url,
-            )
+            external_id=identifier,
+            meta={
+                "first_name": payload.first_name,
+                "last_name": payload.last_name,
+                "username": payload.username,
+                "photo_url": payload.photo_url,
+            },
+            # last_login_at=datetime.now(UTC)
         )
-        await self.auth_repo.add(auth)
+        await self.identity_repo.add(identity)
         
         if replace_fields:
             self._fill_profile_from_tg(user, payload)

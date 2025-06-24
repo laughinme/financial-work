@@ -2,10 +2,10 @@ from fastapi import APIRouter
 
 
 def get_v1_webhooks() -> APIRouter:
+    from .stripe import router as stripe_router
+    
     router = APIRouter(prefix="/v1")
 
-    from .payments import get_payment_webhooks
-
-    router.include_router(get_payment_webhooks())
+    router.include_router(stripe_router)
 
     return router

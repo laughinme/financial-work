@@ -26,17 +26,22 @@ class Portfolio(TimestampMixin, Base):
     nav_price: Mapped[Decimal] = mapped_column(DECIMAL(24, 8), nullable=False, default=Decimal('1'))
     balance: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
     equity: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
-    drawdown: Mapped[Decimal] = mapped_column(DECIMAL(6, 3), nullable=False) # in percent
+    drawdown: Mapped[Decimal] = mapped_column(DECIMAL(7, 3), nullable=False) # in percent
     
-    gain_percent: Mapped[float] = mapped_column(DECIMAL(9, 3), nullable=False) # net % gain
+    deposits: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
+    withdrawals: Mapped[Decimal] = mapped_column(DECIMAL(24, 2), nullable=False)
+    invitation_url: Mapped[str] = mapped_column(String, nullable=True)
+    
+    gain_percent: Mapped[Decimal] = mapped_column(DECIMAL(9, 3), nullable=False) # net % gain
     net_profit: Mapped[Decimal] = mapped_column(DECIMAL(18, 2), nullable=False)
-
+    
     first_trade_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     last_sync: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=datetime.now(UTC)
     )
+    last_update_myfx: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     
     # active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     
@@ -46,4 +51,9 @@ class Portfolio(TimestampMixin, Base):
         "PortfolioSnapshot", 
         back_populates="portfolio", 
         order_by="PortfolioSnapshot.snapshot_date.desc()"
+    )
+    gains = relationship(
+        "DailyGain", 
+        back_populates='portfolio',
+        order_by="DailyGain.date.desc()"
     )

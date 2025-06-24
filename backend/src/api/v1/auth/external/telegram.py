@@ -11,7 +11,8 @@ router = APIRouter()
 
 @router.post(
     path='/telegram/callback',
-    response_model=UserSchema
+    response_model=UserSchema,
+    responses={403: {"description": "Invalid telegram signature"}}
 )
 async def auth_telegram_widget(
     request: Request,

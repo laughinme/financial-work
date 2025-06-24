@@ -1,50 +1,49 @@
-import React from 'react';
-import { FiSearch, FiPlus, FiStar, FiMoreHorizontal } from 'react-icons/fi';
-import Sidebar from './Sidebar';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { FiSearch } from "react-icons/fi";
+
+import Sidebar from "./Sidebar";
+import StrategyCard from "./StrategyCard";
+
 import "../../global.css";
-import './portfolio.css';
+import "./portfolio.css";
 
-const rows=[
-  {id:'P-67234',avatar:'/img/avatars/a1.png',name:'Alpha Growth',email:'alpha@example.com',date:'12 Dec 2023',status:'complete'},
-  {id:'P-67235',avatar:'/img/avatars/a2.png',name:'Beta Momentum',email:'beta@example.com', date:'10 Dec 2023',status:'pending'},
-  {id:'P-67236',avatar:'/img/avatars/a3.png',name:'Gamma Value', email:'gamma@example.com',date:'08 Dec 2023',status:'cancel'},
-];
-const statusLabel={complete:'Complete',pending:'Pending',cancel:'Cancel'};
+import { usePortfolio } from "../../contexts/PortfolioContext";
 
-export default function PortfolioPage(){
-  return(
+export default function PortfolioPage() {
+  const { strategies } = usePortfolio();
+  const [query, setQuery] = useState("");
+
+  const visible = strategies.filter((s) =>
+    s.name.toLowerCase().includes(query.toLowerCase())
+  );
+
+  return (
     <div className="layout">
-      <Sidebar/>
+      <Sidebar />
 
-      <main className="portfolios">
+      <main className="strategies">
+        <header className="strategies__header">
+          <h1 className="strategies__title">All&nbsp;strategies</h1>
 
-        <header className="portfolios__header">
-          <h1 className="portfolios__title">Portfolio List</h1>
-          <div className="portfolios__right">
-            <div className="search"><FiSearch size={16}/><input placeholder="Search"/></div>
-            <button className="btn-primary"><FiPlus size={16}/>Add New</button>
+          <div className="search-bar">
+            <FiSearch size={16} />
+            <input
+              type="text"
+              placeholder="Find a strategy…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </div>
         </header>
 
-
-        <table className="pf-table">
-          <thead>
-            <tr><th><input type="checkbox"/></th><th>ID #</th><th>Name</th><th>E-mail</th><th>Date</th><th>Status</th><th/></tr>
-          </thead>
-          <tbody>
-            {rows.map(r=>(
-              <tr key={r.id}>
-                <td><input type="checkbox"/></td>
-                <td className="muted">{r.id}</td>
-                <td className="pf-name"><img src={r.avatar} alt=""/>{r.name}</td>
-                <td className="email">{r.email}</td>
-                <td className="muted">{r.date}</td>
-                <td><span className={`badge badge--${r.status}`}>{statusLabel[r.status]}</span></td>
-                <td className="actions"><FiStar size={18}/><FiMoreHorizontal size={20}/></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="card-grid">
+          {visible.map((s) => (
+            <Link key={s.id} to={`/portfolio/${s.id}`} className="card-link">
+              <StrategyCard strategy={s} />
+            </Link>
+          ))}
+        </div>
       </main>
     </div>
   );

@@ -1,0 +1,73 @@
+/* src/ui/moneyModal.css */
+.mm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4000;
+  }
+  
+  .mm-box {
+    width: 360px;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    animation: mm-scale 0.25s ease;
+  }
+  
+  @keyframes mm-scale {
+    0% {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  .mm-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  
+  .mm-input {
+    height: 44px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: 1rem;
+    outline: none;
+  }
+  
+  .mm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  
+  .mm-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    background: #e5e7eb;
+  }
+  
+  .mm-btn.primary {
+    background: #2563eb;
+    color: #fff;
+  }
+  
+  .mm-btn:hover {
+    opacity: 0.9;
+  }
+  
