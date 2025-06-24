@@ -1,5 +1,5 @@
-// src/mainpage/components/ProfilePage.jsx
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 
@@ -7,7 +7,19 @@ import Sidebar from "./Sidebar";
 import "../dashboard.css";
 import "./profilePage.css";
 
-import MoneyModal from "./ui/MoneyModal";          // ← NEW
+import MoneyModal        from "./ui/MoneyModal";
+import TimeRangeSelector from "./TimeRangeSelector";
+
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 
 import {
   createDeposit,
@@ -16,56 +28,75 @@ import {
   getBalance,
   DASHBOARD_URL,
 } from "../../api/payments";
-import { getSummary } from "../../api/dashboard";
+import { getSummary }       from "../../api/dashboard";
 import { listTransactions } from "../../api/transactions";
-import { usePortfolio } from "../../contexts/PortfolioContext";
-import { logout as logoutApi } from "../../api/auth";
-import { clearCurrent } from "../../auth/storage";
+import { usePortfolio }     from "../../contexts/PortfolioContext";
+import { logout as logoutApi} from "../../api/auth";
+import { clearCurrent }     from "../../auth/storage";
+
 
 const fmtMoney = (n) => "$" + (+n).toLocaleString();
-const colored = (n) => (+n >= 0 ? "text-green-600" : "text-red-600");
+const colored  = (n) => (+n >= 0 ? "text-green-600" : "text-red-600");
+
+const RANGES = [
+  { label: "1M", days: 30 },
+  { label: "3M", days: 90 },
+  { label: "6M", days: 180 },
+  { label: "1Y", days: 360 },
+];
 
 export default function ProfilePage() {
   const navigate = useNavigate();
 
-  /* ── summary ── */
+  /* ─ summary ─ */
   const [summary, setSummary] = useState(null);
   useEffect(() => {
     getSummary().then(setSummary).catch(console.error);
   }, []);
 
-  /* ── balance ── */
+  /* ─ balance ─ */
   const [payBalance, setPayBalance] = useState(null);
   const fetchBalance = () =>
     getBalance().then(setPayBalance).catch(console.error);
-
   useEffect(() => {
     fetchBalance().then(() => setTimeout(fetchBalance, 5000));
   }, []);
 
-  /* ── invest portfolios ── */
+  /* ─ investments count ─ */
   const { invested } = usePortfolio();
 
-  /* ── transactions ── */
-  const [tx, setTx] = useState(null);
-  useEffect(() => {
-    listTransactions(50, 1).then(setTx).catch(console.error);
-  }, []);
-
+  /* ─ transactions ─ */
+  const [tx, setTx]         = useState(null);
   const [showAll, setShowAll] = useState(false);
+  useEffect(() => {
+    listTransactions(100, 1).then(setTx).catch(console.error);
+  }, []);
   const visibleTx = tx ? (showAll ? tx : tx.slice(0, 5)) : [];
 
-  /* ── Deposit / Withdraw modals ── */
-  const [modal, setModal] = useState({ open: false, type: null });
+  /* ─ chart transactions over time ─ */
+  const [range, setRange] = useState(30);
+  // filter and map to chart data
+  const chartData = useMemo(() => {
+    if (!tx) return [];
+    return tx
+      .map((t) => ({
+        date: t.created_at,
+        amount: +t.amount,
+      }))
+      .filter((d) =>
+        dayjs(d.date).isAfter(dayjs().subtract(range, "day"))
+      );
+  }, [tx, range]);
 
-  const doDeposit = async (amountUsd) => {
-    const { url } = await createDeposit(amountUsd);
+  /* ─ Deposit / Withdraw modal ─ */
+  const [modal, setModal] = useState({ open: false, type: null });
+  const doDeposit  = async (usd) => {
+    const { url } = await createDeposit(usd);
     window.location.href = url;
   };
-
-  const doWithdraw = async (amountUsd) => {
+  const doWithdraw = async (usd) => {
     try {
-      await createWithdraw(amountUsd);
+      await createWithdraw(usd);
       alert("Withdraw request accepted");
       window.location.href = DASHBOARD_URL;
     } catch (err) {
@@ -79,24 +110,18 @@ export default function ProfilePage() {
       }
     }
   };
-
   const onSubmit = modal.type === "deposit" ? doDeposit : doWithdraw;
 
-  /* ── logout ── */
+  /* ─ logout ─ */
   const handleLogout = async () => {
-    try {
-      await logoutApi();
-    } catch {}
+    try { await logoutApi(); } catch {}
     clearCurrent();
     navigate("/", { replace: true });
   };
 
   if (!summary) return null;
-
   const portfolioCnt =
-    summary.num_portfolios != null
-      ? summary.num_portfolios
-      : invested.length;
+    summary.num_portfolios != null ? summary.num_portfolios : invested.length;
 
   return (
     <>
@@ -147,7 +172,58 @@ export default function ProfilePage() {
             </span>
           </div>
 
-          {/* Transactions */}
+          {/* Transactions chart */}
+          <section className="chart">
+            <h2 className="chart-title">All Transactions</h2>
+            {chartData.length ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis
+                    dataKey="date"
+                    stroke="#6B7280"
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(d) => dayjs(d).format("DD MMM")}
+                  />
+                  <YAxis
+                    stroke="#6B7280"
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(v) => fmtMoney(Math.abs(v))}
+                  />
+                  <Tooltip
+                    formatter={(v, name) => [
+                      `${v >= 0 ? "" : "-"}${fmtMoney(Math.abs(v))}`,
+                      name,
+                    ]}
+                    labelFormatter={(d) => dayjs(d).format("DD MMM YYYY")}
+                  />
+                  <Bar
+                    dataKey="amount"
+                    name="Amount"
+                    barSize={10}
+                    isAnimationActive={true}
+                    animationDuration={800}
+                  >
+                    {chartData.map((d, i) => (
+                      <Cell
+                        key={i}
+                        fill={d.amount < 0 ? "#EF4444" : "#10B981"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="no-data">No data</div>
+            )}
+            <TimeRangeSelector
+              ranges={RANGES}
+              value={range}
+              onChange={setRange}
+            />
+          </section>
+
+          {/* Transactions list */}
           <section className="tx-block">
             <h2 className="section-title">Your Transactions</h2>
             {tx ? (

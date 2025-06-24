@@ -80,8 +80,8 @@ export default function DashboardPage() {
 
   /* ─── charts ─── */
  
-  const [rangePnl, setRangePnl] = useState(30);
-  const [rangeVal, setRangeVal] = useState(30);
+  const [rangePnl, setRangePnl] = useState(180);
+  const [rangeVal, setRangeVal] = useState(180);
 
   const [pnlData, setPnl] = useState([]);
   const [valData, setVal] = useState([]);
