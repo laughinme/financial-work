@@ -180,4 +180,3 @@ node_modules/
 /.vscode
 test.py
 /_temp
-/nginx/ssl
