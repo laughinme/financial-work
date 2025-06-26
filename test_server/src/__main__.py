@@ -7,13 +7,16 @@ from starlette.middleware.cors import CORSMiddleware
 
 from api import get_api_routers
 from core.config import Config
-from domain import simulate_realtime
+from service.myfx_service import get_myfxservice, MyFXService
 
 
 config = Config()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    svc: MyFXService = await get_myfxservice()
+    svc.seed_portfolios(5)
+    
     # task = asyncio.create_task(simulate_realtime())
     # try:
     #     yield

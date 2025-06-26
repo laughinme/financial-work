@@ -1,123 +1,133 @@
 services:
-    test_server:
-        build:
-            context: ./test_server
-            dockerfile: Dockerfile
-        container_name: test_server
-        env_file:
-            - ./test_server/.env
-        environment:
-            - DB_HOST=test_db
-            - DB_PORT=5432
-            - REDIS_HOST=redis
-        ports:
-            - "8001:8001"
-        depends_on:
-            test_db:
-                condition: service_healthy
-            redis:
-                condition: service_healthy
-        networks:
-            - web
-    backend:
-        build:
-            context: ./backend
-            dockerfile: Dockerfile
-        container_name: backend
-        env_file:
-            - ./backend/.env
-        environment:
-            - DB_HOST=db
-            - DB_PORT=5432
-            - REDIS_HOST=redis
-            - MOCK_URL=http://test_server:8001/api/v1
-        ports:
-            - "8000:8000"
-        depends_on:
-            db:
-                condition: service_healthy
-            redis:
-                condition: service_healthy
-        networks:
-            - web
-        # healthcheck:
-        #     test: ["CMD", "curl", "-f", "http://backend:8000/ping"]
-        #     interval: 10s
-        #     timeout: 5s
-        #     retries: 5
+  test_server:
+    build:
+      context: ./test_server
+      dockerfile: Dockerfile
+    container_name: test_server
+    env_file:
+      - ./test_server/.env
+    environment:
+      - DB_HOST=test_db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+    ports:
+      - "8001:8001"
+    depends_on:
+      test_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - web
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - MOCK_URL=http://test_server:8001/api/v1
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - web
+  telegram_bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: bot
+    env_file:
+      - ./bot/.env
+    restart: unless-stopped
+    networks:
+      - web
+    # healthcheck:
+    #     test: ["CMD", "curl", "-f", "http://backend:8000/ping"]
+    #     interval: 10s
+    #     timeout: 5s
+    #     retries: 5
 
-    frontend:
-        build:
-            context: ./frontend
-            dockerfile: Dockerfile
-            args:
-                VITE_API_URL: http://localhost:8000
-        container_name: frontend
-        environment:
-            - VITE_API_URL=http://localhost:8000
-        ports:
-            - "5173:4173"
-        # depends_on:
-        #     backend:
-        #         condition: service_healthy
-        networks:
-            - web
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
+    container_name: frontend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    ports:
+      - "5173:4173"
+    # depends_on:
+    #     backend:
+    #         condition: service_healthy
+    networks:
+      - web
 
-    redis:
-        image: redis:latest
-        container_name: redis_service
-        ports:
-            - "6380:6379"
-        volumes:
-            - redis_data:/data
-        healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
-            interval: 5s
-            timeout: 3s
-            retries: 5
-        networks:
-            - web
+  redis:
+    image: redis:latest
+    container_name: redis_service
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - web
 
-    db:
-        image: postgres:latest
-        environment:
-            POSTGRES_USER: "postgres"
-            POSTGRES_PASSWORD: "postgres"
-            POSTGRES_DB: "financial"
-        ports:
-            - "5433:5432"
-        volumes:
-            - postgres_data:/var/lib/postgresql/data
-        healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U postgres"]
-            interval: 5s
-            timeout: 3s
-            retries: 5
-        networks:
-            - web
-    test_db:
-        image: postgres:latest
-        environment:
-            POSTGRES_USER: "postgres"
-            POSTGRES_PASSWORD: "postgres"
-            POSTGRES_DB: "test_server_base"
-        ports:
-            - "5434:5432"
-        volumes:
-            - test_db_data:/var/lib/postgresql/data
-        healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U postgres"]
-            interval: 5s
-            timeout: 3s
-            retries: 5
-        networks:
-            - web
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "financial"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - web
+  test_db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "test_server_base"
+    ports:
+      - "5434:5432"
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - web
 
 networks:
-    web:
-        driver: bridge
+  web:
+    driver: bridge
 
 volumes:
-    postgres_data:
-    test_db_data:
-    redis_data:
+  postgres_data:
+  test_db_data:
+  redis_data:

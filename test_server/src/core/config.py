@@ -23,15 +23,6 @@ class Config(BaseSettings):
     # Redis settings
     REDIS_HOST: str
     REDIS_PORT: int
-    
-    # Telegram bot settings
-    BOT_TOKEN: str
-
-    # Payment system settings
-    YOOKASSA_ACCOUNT_ID: str
-    YOOKASSA_SECRET: str
-    STRIPE_API_KEY: str
-    STRIPE_WEBHOOK_SECRET: str
 
     # Site data (url, paths)
     SITE_URL: str

@@ -1,34 +1,32 @@
-
 import React, { useState, useEffect } from "react";
-import { FiEye, FiEyeOff }            from "react-icons/fi";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import "../log/log.css";
 
 import { findUser, createUser, setCurrent } from "../storage";
-import { linkTelegram }                      from "../../api/users";
-import { login as loginApi }                 from "../../api/auth";
+import { login as loginApi, loginWithTelegram } from "../../api/auth";
 
 export default function Log({ onSwitch, onReset }) {
-  const [email,    setEmail]    = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPass, setShow]     = useState(false);
+  const [showPass, setShow] = useState(false);
 
   /* ───── Telegram widget ───── */
   useEffect(() => {
     window.onTelegramAuth = (user) => {
-      linkTelegram(user, true)
-        .then(() =>
-          alert(`Telegram linked: @${user.username || user.id}`)
-        )
-        .catch(() => alert("Failed to link Telegram account"));
+      loginWithTelegram(user)
+        .then(() => {
+          window.location.href = "/main.html#/dashboard";
+        })
+        .catch(() => alert("Telegram authentication failed"));
     };
 
     const script = document.createElement("script");
     script.async = true;
-    script.src   = "https://telegram.org/js/telegram-widget.js?22";
-    script.setAttribute("data-telegram-login",    "niperybot");
-    script.setAttribute("data-size",               "large");
-    script.setAttribute("data-onauth",             "onTelegramAuth(user)");
-    script.setAttribute("data-request-access",     "write");
+    script.src = "https://telegram.org/js/telegram-widget.js?22";
+    script.setAttribute("data-telegram-login", "ai_financialbot");
+    script.setAttribute("data-size", "large");
+    script.setAttribute("data-onauth", "onTelegramAuth(user)");
+    script.setAttribute("data-request-access", "write");
 
     const container = document.getElementById("telegram-login-button");
     if (container) container.appendChild(script);
@@ -64,7 +62,9 @@ export default function Log({ onSwitch, onReset }) {
     <form className="login-card" onSubmit={handleSubmit}>
       <h1 className="form-title">Log in</h1>
 
-      <label className="field-label" htmlFor="email">Email Address</label>
+      <label className="field-label" htmlFor="email">
+        Email Address
+      </label>
       <div className="input-wrapper">
         <input
           id="email"
@@ -76,7 +76,9 @@ export default function Log({ onSwitch, onReset }) {
         />
       </div>
 
-      <label className="field-label" htmlFor="password">Password</label>
+      <label className="field-label" htmlFor="password">
+        Password
+      </label>
       <div className="input-wrapper password">
         <input
           id="password"
@@ -105,7 +107,9 @@ export default function Log({ onSwitch, onReset }) {
         </button>
       </div>
 
-      <button type="submit" className="primary-btn">Log in</button>
+      <button type="submit" className="primary-btn">
+        Log in
+      </button>
 
       <div
         id="telegram-login-button"
