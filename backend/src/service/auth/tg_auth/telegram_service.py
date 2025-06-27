@@ -1,5 +1,7 @@
 import hmac
 import hashlib
+import logging
+import secrets
 from datetime import datetime, UTC
 
 from fastapi import Request
@@ -11,6 +13,7 @@ from database.relational_db import (
     IdentityInterface,
     Identity,
     UoW,
+    Wallet
 )
 from domain.users import TelegramAuthSchema, Provider
 from core.config import Config
@@ -19,6 +22,8 @@ from ..session import SessionService
 
 
 config = Config()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class TelegramService:
@@ -37,8 +42,9 @@ class TelegramService:
 
     @staticmethod
     def _verify(payload: TelegramAuthSchema) -> None:
-        data = payload.model_dump()
-        check_hash = data.pop("hash")
+        data = payload.model_dump(exclude_none=True)
+        logger.info(data)
+        check_hash = data.pop("hash").encode()
         
         data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
         secret_key = hashlib.sha256(config.BOT_TOKEN.encode()).digest()
@@ -46,12 +52,18 @@ class TelegramService:
             secret_key,
             msg=data_check_string.encode(),
             digestmod=hashlib.sha256
-        ).hexdigest()
+        ).digest()
+        
+        logger.info(f'{hmac_hash}, {check_hash}')
 
-        if hmac_hash != check_hash:
+        if secrets.compare_digest(secret_key, check_hash):
+            logger.error('Invalid Hash')
             raise InvalidTelegramSignature()
         
-        # TODO: check if authorization is expired
+        # Reject payloads that are older than 24 hours to prevent replay attacks
+        now_ts = int(datetime.now(UTC).timestamp())
+        if now_ts - data["auth_date"] > 60 * 60 * 24:
+            raise InvalidTelegramSignature()
         
         
     @staticmethod
@@ -92,6 +104,10 @@ class TelegramService:
                     # last_login_at=datetime.now(UTC)
                 )
                 user.identities.append(identity)
+                    
+                wallet = Wallet(currency='USD')
+                user.wallets.append(wallet)
+                
             await self.user_repo.add(user)
             self._fill_profile_from_tg(user, payload)
         

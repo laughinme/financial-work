@@ -11,3 +11,7 @@ export const register = (email, password) =>
 
 /** POST /api/v1/auth/logout */
 export const logout = () => http.post("/api/v1/auth/logout");
+
+/** POST /api/v1/auth/external/telegram/callback */
+export const loginWithTelegram = (payload) =>
+  http.post("/api/v1/auth/external/telegram/callback", payload);

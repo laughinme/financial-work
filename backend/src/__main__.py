@@ -53,12 +53,17 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=config.SESSION_SECRET_KEY,
     max_age=config.SESSION_LIFETIME,
-    session_cookie="session_id"
+    session_cookie="session_id",
+    https_only=True
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=[
+        "https://76ca-79-127-249-67.ngrok-free.app",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_methods=['*'],
     allow_headers=['*'],
     allow_credentials=True
