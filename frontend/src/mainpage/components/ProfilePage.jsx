@@ -59,7 +59,7 @@ export default function ProfilePage() {
   const fetchBalance = () =>
     getBalance().then(setPayBalance).catch(console.error);
   useEffect(() => {
-    fetchBalance().then(() => setTimeout(fetchBalance, 5000));
+    fetchBalance();
   }, []);
 
   /* ─ investments count ─ */

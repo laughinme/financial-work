@@ -23,6 +23,7 @@ export default defineConfig({
 
   /* ─────────────── dev server ─────────────── */
   server: {
-    allowedHosts: ["localhost", "612c-185-77-216-38.ngrok-free.app"],
+    allowedHosts: ["localhost", "76ca-79-127-249-67.ngrok-free.app"],
+    // proxy: { "/api": "http://backend:8000/api" },
   },
 });

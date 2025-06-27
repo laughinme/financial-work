@@ -1,4 +1,3 @@
-
 import axios from "axios";
 
 /**
@@ -6,8 +5,8 @@ import axios from "axios";
  * baseURL is taken from VITE_API_URL passed in the Dockerfile.
  */
 export const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
-  withCredentials: true,      // send cookies along with requests
+  baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true, // send cookies along with requests
   timeout: 15000,
 });
 

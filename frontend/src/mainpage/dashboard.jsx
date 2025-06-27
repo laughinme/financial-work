@@ -74,8 +74,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const load = () => getBalance().then(setPayBal).catch(console.error);
     load();
-    const t = setInterval(load, 5000);
-    return () => clearInterval(t);
   }, []);
 
   /* ─── charts ─── */

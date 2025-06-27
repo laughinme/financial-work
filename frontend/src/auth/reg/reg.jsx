@@ -1,32 +1,30 @@
 import React, { useState, useEffect } from "react";
-import { FiEye, FiEyeOff }            from "react-icons/fi";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import "./reg.css";
 
 import { createUser, findUser, setCurrent } from "../storage";
-import { linkTelegram }  from "../../api/users";
+import { linkTelegram } from "../../api/users";
 import { register as registerApi } from "../../api/auth";
 
 export default function Reg({ onSwitch }) {
-  const [email,    setEmail]    = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPass, setShow]     = useState(false);
+  const [showPass, setShow] = useState(false);
 
   /* ───── Telegram widget ───── */
   useEffect(() => {
     window.onTelegramAuth = (user) => {
       linkTelegram(user, true)
-        .then(() =>
-          alert(`Telegram linked: @${user.username || user.id}`)
-        )
+        .then(() => alert(`Telegram linked: @${user.username || user.id}`))
         .catch(() => alert("Failed to link Telegram account"));
     };
 
     const script = document.createElement("script");
     script.async = true;
-    script.src   = "https://telegram.org/js/telegram-widget.js?22";
-    script.setAttribute("data-telegram-login", "niperybot");
-    script.setAttribute("data-size",           "large");
-    script.setAttribute("data-onauth",         "onTelegramAuth(user)");
+    script.src = "https://telegram.org/js/telegram-widget.js?22";
+    script.setAttribute("data-telegram-login", "ai_financialbot");
+    script.setAttribute("data-size", "large");
+    script.setAttribute("data-onauth", "onTelegramAuth(user)");
     script.setAttribute("data-request-access", "write");
 
     const container = document.getElementById("telegram-login-button-reg");
@@ -43,7 +41,7 @@ export default function Reg({ onSwitch }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await registerApi(email, password);         
+      await registerApi(email, password);
       if (!findUser(email)) createUser(email, password);
       setCurrent(email);
       window.location.href = "/main.html#/dashboard";
@@ -57,7 +55,9 @@ export default function Reg({ onSwitch }) {
     <form className="login-card" onSubmit={handleSubmit}>
       <h1 className="form-title">Registration</h1>
 
-      <label className="field-label" htmlFor="email">Email Address</label>
+      <label className="field-label" htmlFor="email">
+        Email Address
+      </label>
       <div className="input-wrapper">
         <input
           id="email"
@@ -69,7 +69,9 @@ export default function Reg({ onSwitch }) {
         />
       </div>
 
-      <label className="field-label" htmlFor="password">Password</label>
+      <label className="field-label" htmlFor="password">
+        Password
+      </label>
       <div className="input-wrapper password">
         <input
           id="password"
@@ -90,7 +92,9 @@ export default function Reg({ onSwitch }) {
         </button>
       </div>
 
-      <button type="submit" className="primary-btn">Create an account</button>
+      <button type="submit" className="primary-btn">
+        Create an account
+      </button>
 
       <div
         id="telegram-login-button-reg"
