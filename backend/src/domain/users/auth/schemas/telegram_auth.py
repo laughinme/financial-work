@@ -10,5 +10,5 @@ class TelegramAuthSchema(BaseModel):
     last_name: str | None = Field(None, description="Last name of the user")
     username: str | None = Field(None, description="Telegram username")
     photo_url: str | None = Field(None, description="URL to the user's avatar")
-    auth_date: datetime = Field(..., description="Authorization timestamp")
+    auth_date: int = Field(..., description="Authorization timestamp")
     hash: str = Field(..., description="Telegram signature hash")
