@@ -17,9 +17,12 @@ export const register = async (email, password) => {
 };
 
 /** POST /api/v1/auth/logout */
-export const logout = () => {
-  clearTokens();
-  return http.post("/api/v1/auth/logout");
+export const logout = async () => {
+  try {
+    await http.post("/api/v1/auth/logout");
+  } finally {
+    clearTokens();
+  }
 };
 
 export const refresh = () => http.post("/api/v1/auth/refresh");
