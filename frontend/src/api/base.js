@@ -6,7 +6,7 @@ import { getAccessToken, setAccessToken, clearTokens } from "../auth/storage";
  * baseURL is taken from VITE_API_URL passed in the Dockerfile.
  */
 export const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 15000,
   withCredentials: true,
 });

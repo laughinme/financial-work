@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Query, Response
+from fastapi import APIRouter, Depends, Response
 
 from core.config import Config
 from domain.users import AccessToken, TelegramAuthSchema
@@ -15,12 +15,11 @@ router = APIRouter()
     responses={401: {"description": "Invalid telegram signature"}}
 )
 async def auth_telegram_widget(
-    request: Request,
     response: Response,
     payload: TelegramAuthSchema,
     telegram_service: TelegramService = Depends(get_telegram_service)
 ):
-    access, refresh = await telegram_service.login(request, payload, config.SESSION_TTL)
+    access, refresh = await telegram_service.login(payload)
     response.set_cookie(
         "refresh_token",
         refresh,

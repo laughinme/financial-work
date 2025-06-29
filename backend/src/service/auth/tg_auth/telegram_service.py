@@ -52,7 +52,7 @@ class TelegramService:
             digestmod=hashlib.sha256
         ).digest()
 
-        if secrets.compare_digest(hmac_hash, check_hash):
+        if not secrets.compare_digest(hmac_hash, check_hash):
             logger.error('Invalid Hash')
             raise InvalidTelegramSignature()
         
@@ -78,7 +78,7 @@ class TelegramService:
     async def login(
         self,
         payload: TelegramAuthSchema,
-    ) -> User:
+    ) -> tuple[str, str]:
         self._verify(payload)
         
         identifier = str(payload.id)
@@ -108,8 +108,10 @@ class TelegramService:
             await self.user_repo.add(user)
             self._fill_profile_from_tg(user, payload)
         
-        access, refresh = await self.token_service.create_tokens(user.id, need_email=not bool(user.email))
-        return user, access, refresh
+        access, refresh = await self.token_service.create_tokens(
+            user.id, need_email=not bool(user.email)
+        )
+        return access, refresh
     
     
     async def link(

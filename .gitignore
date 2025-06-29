@@ -182,3 +182,4 @@ test.py
 /_temp
 /nginx/ssl
 /secrets
+package-lock.json
