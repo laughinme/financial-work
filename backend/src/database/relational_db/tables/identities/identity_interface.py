@@ -1,4 +1,3 @@
-from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +14,6 @@ class IdentityInterface:
         self.session.add(identity)
         return identity
 
-
     async def find(self, provider: Provider, identifier: str) -> Identity | None:
         return await self.session.scalar(
             select(Identity).where(
@@ -23,21 +21,7 @@ class IdentityInterface:
                 Identity.external_id == identifier,
             )
         )
-
-
-    async def get_user_and_secret(self, identifier: str) -> tuple[User, str] | None:
-        query = (
-            select(User, Identity.secret_hash)
-            .join(Identity)
-            .where(
-                Identity.provider == Provider.PASSWORD,
-                Identity.external_id == identifier,
-            )
-        )
-        result = await self.session.execute(query)
-        return result.one_or_none()
-
-
+        
     async def get_user_by_provider(self, provider: Provider, identifier: str) -> User | None:
         query = (
             select(User)
@@ -48,13 +32,3 @@ class IdentityInterface:
             )
         )
         return await self.session.scalar(query)
-    
-        
-    async def find_password_by_user_id(self, user_id: UUID) -> Identity | None:
-        return await self.session.scalar(
-            select(Identity)
-            .where(
-                Identity.user_id == user_id,
-                Identity.provider == Provider.PASSWORD,
-            )
-        )

@@ -4,7 +4,6 @@ import logging
 import secrets
 from datetime import datetime, UTC
 
-from fastapi import Request
 from sqlalchemy.exc import IntegrityError
 
 from database.relational_db import (
@@ -18,7 +17,7 @@ from database.relational_db import (
 from domain.users import TelegramAuthSchema, Provider
 from core.config import Config
 from .exceptions import InvalidTelegramSignature, AlreadyLinked
-from ..session import SessionService
+from ..tokens import TokenService
 
 
 config = Config()
@@ -31,19 +30,18 @@ class TelegramService:
         self,
         identity_repo: IdentityInterface,
         user_repo: UserInterface,
-        session_service: SessionService,
+        token_service: TokenService,
         uow: UoW,
     ):
         self.identity_repo = identity_repo
         self.user_repo = user_repo
-        self.session_service = session_service
+        self.token_service = token_service
         self.uow = uow
         
 
     @staticmethod
     def _verify(payload: TelegramAuthSchema) -> None:
         data = payload.model_dump(exclude_none=True)
-        logger.info(data)
         check_hash = data.pop("hash").encode()
         
         data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
@@ -53,16 +51,15 @@ class TelegramService:
             msg=data_check_string.encode(),
             digestmod=hashlib.sha256
         ).digest()
-        
-        logger.info(f'{hmac_hash}, {check_hash}')
 
-        if secrets.compare_digest(secret_key, check_hash):
+        if secrets.compare_digest(hmac_hash, check_hash):
             logger.error('Invalid Hash')
             raise InvalidTelegramSignature()
         
         # Reject payloads that are older than 24 hours to prevent replay attacks
         now_ts = int(datetime.now(UTC).timestamp())
         if now_ts - data["auth_date"] > 60 * 60 * 24:
+            logger.error('Login expired')
             raise InvalidTelegramSignature()
         
         
@@ -80,9 +77,7 @@ class TelegramService:
     
     async def login(
         self,
-        request: Request,
         payload: TelegramAuthSchema,
-        ttl: int
     ) -> User:
         self._verify(payload)
         
@@ -91,7 +86,9 @@ class TelegramService:
         async with self.uow:
             user = await self.identity_repo.get_user_by_provider(Provider.TELEGRAM, identifier)
             if user is None:
-                user = self.user_repo.create()
+                user = User.create()
+                user.allow_password_login = False
+                
                 identity = Identity(
                     provider=Provider.TELEGRAM,
                     external_id=identifier,
@@ -111,10 +108,8 @@ class TelegramService:
             await self.user_repo.add(user)
             self._fill_profile_from_tg(user, payload)
         
-        session_id = await self.session_service.create_session(user.id, ttl)
-        request.session['session_id'] = session_id
-        
-        return user
+        access, refresh = await self.token_service.create_tokens(user.id, need_email=not bool(user.email))
+        return user, access, refresh
     
     
     async def link(

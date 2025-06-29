@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -7,7 +6,7 @@ import Sidebar from "./Sidebar";
 import "../dashboard.css";
 import "./profilePage.css";
 
-import MoneyModal        from "./ui/MoneyModal";
+import MoneyModal from "./ui/MoneyModal";
 import TimeRangeSelector from "./TimeRangeSelector";
 
 import {
@@ -28,15 +27,14 @@ import {
   getBalance,
   DASHBOARD_URL,
 } from "../../api/payments";
-import { getSummary }       from "../../api/dashboard";
+import { getSummary } from "../../api/dashboard";
 import { listTransactions } from "../../api/transactions";
-import { usePortfolio }     from "../../contexts/PortfolioContext";
-import { logout as logoutApi} from "../../api/auth";
-import { clearCurrent }     from "../../auth/storage";
-
+import { usePortfolio } from "../../contexts/PortfolioContext";
+import { logout as logoutApi } from "../../api/auth";
+import { clearCurrent, clearTokens } from "../../auth/storage";
 
 const fmtMoney = (n) => "$" + (+n).toLocaleString();
-const colored  = (n) => (+n >= 0 ? "text-green-600" : "text-red-600");
+const colored = (n) => (+n >= 0 ? "text-green-600" : "text-red-600");
 
 const RANGES = [
   { label: "1M", days: 30 },
@@ -66,7 +64,7 @@ export default function ProfilePage() {
   const { invested } = usePortfolio();
 
   /* ─ transactions ─ */
-  const [tx, setTx]         = useState(null);
+  const [tx, setTx] = useState(null);
   const [showAll, setShowAll] = useState(false);
   useEffect(() => {
     listTransactions(100, 1).then(setTx).catch(console.error);
@@ -83,14 +81,12 @@ export default function ProfilePage() {
         date: t.created_at,
         amount: +t.amount,
       }))
-      .filter((d) =>
-        dayjs(d.date).isAfter(dayjs().subtract(range, "day"))
-      );
+      .filter((d) => dayjs(d.date).isAfter(dayjs().subtract(range, "day")));
   }, [tx, range]);
 
   /* ─ Deposit / Withdraw modal ─ */
   const [modal, setModal] = useState({ open: false, type: null });
-  const doDeposit  = async (usd) => {
+  const doDeposit = async (usd) => {
     const { url } = await createDeposit(usd);
     window.location.href = url;
   };
@@ -114,7 +110,10 @@ export default function ProfilePage() {
 
   /* ─ logout ─ */
   const handleLogout = async () => {
-    try { await logoutApi(); } catch {}
+    try {
+      await logoutApi();
+    } catch {}
+    clearTokens();
     clearCurrent();
     navigate("/", { replace: true });
   };
@@ -239,9 +238,7 @@ export default function ProfilePage() {
                         {(t.amount >= 0 ? "+" : "") +
                           fmtMoney(Math.abs(t.amount))}
                       </span>
-                      <span className="tx-note">
-                        {t.comment || t.note}
-                      </span>
+                      <span className="tx-note">{t.comment || t.note}</span>
                     </li>
                   ))}
                 </ul>

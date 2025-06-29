@@ -30,6 +30,6 @@ def init_scheduler():
         coalesce=True,
         misfire_grace_time=60,
     )
-    scheduler.start()
+    # scheduler.start()
 
     return scheduler

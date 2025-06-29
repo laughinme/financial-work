@@ -3,8 +3,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import dayjs from "dayjs";
 
 import { listSettlements, createIntent } from "../api/admin";
-import { logout as logoutApi }           from "../api/auth";   
-import { clearCurrent }                  from "../auth/storage";
+import { logout as logoutApi }           from "../api/auth";
+import { clearCurrent, clearTokens }     from "../auth/storage";
 
 import "./admin.css";
 
@@ -39,8 +39,9 @@ export default function AdminPage() {
   
   const logout = async () => {
     try {
-      await logoutApi();       
+      await logoutApi();
     } catch {/* ignore */}
+    clearTokens();
     clearCurrent();
     localStorage.removeItem("currentEmail");
     window.location.href = "/"; 

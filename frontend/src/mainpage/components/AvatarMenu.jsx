@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate }   from 'react-router-dom';
 import { logout as logoutApi } from '../../api/auth';
-import { clearCurrent   } from '../../auth/storage';
+import { clearCurrent, clearTokens }   from '../../auth/storage';
 
 import './avatarMenu.css';
 
@@ -32,6 +32,7 @@ export default function AvatarMenu({ initials = 'U' }) {
   /** Logout */
   const handleLogout = async () => {
     try { await logoutApi(); } catch {}
+    clearTokens();
     clearCurrent();
     navigate('/', { replace: true });
   };

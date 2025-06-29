@@ -7,16 +7,16 @@ from database.relational_db import (
     UserInterface,
 )
 from .telegram_service import TelegramService
-from ..session import get_session_service, SessionService
+from ..tokens import TokenService, get_token_service
 
 
 async def get_telegram_service(
     uow: UoW = Depends(get_uow),  
-    session_service: SessionService = Depends(get_session_service),
+    token_service: TokenService = Depends(get_token_service),
 ) -> TelegramService:
     identity_repo = IdentityInterface(uow.session)
     user_repo = UserInterface(uow.session)
 
     return TelegramService(
-        identity_repo, user_repo, session_service, uow
+        identity_repo, user_repo, token_service, uow
     )

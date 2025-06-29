@@ -20,18 +20,4 @@ async def link_email(
     creds_service: Annotated[CredentialsService, Depends(get_credentials_service)],
     user: Annotated[User, Depends(auth_user)]
 ):
-    await creds_service.link(payload.email, user)
-
-
-@router.post(
-    path='/phone',
-    status_code=204
-)
-async def link_phone(
-    payload: UserRegister,
-    creds_service: Annotated[CredentialsService, Depends(get_credentials_service)],
-    user: Annotated[User, Depends(auth_user)]
-):
-    await creds_service.link(payload.phone_number, user)
-
-# TODO: when auth0 module will be connected, rework credentials linking
+    await creds_service.link(user.id, payload)

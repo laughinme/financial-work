@@ -1,7 +1,6 @@
 import asyncio
 import yookassa
 import logging
-# import uuid_utils # I'm hatin it
 from uuid import uuid4
 from yookassa.domain.notification import WebhookNotification
 

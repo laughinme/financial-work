@@ -1,28 +1,26 @@
-import bcrypt
-import random 
+import random
 import string
-from uuid import UUID
-from datetime import datetime, UTC
 
+from uuid import UUID
 from fastapi import Request
 from sqlalchemy.exc import IntegrityError
+from passlib.context import CryptContext
 
 from database.relational_db import (
     UserInterface,
     User,
     IdentityInterface,
-    Identity,
     UoW,
     Wallet
 )
 from domain.users import Provider, UserRegister, UserLogin
 from core.config import Config
-from .exceptions import AlreadyExists, WrongCredentials, NotAuthenticated
-from ..session import SessionService
+from .exceptions import AlreadyExists, WrongCredentials, NotAuthenticated, NotFound, EmailAlreadySet
+from ..tokens import TokenService
 
 
 config = Config()
-
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class CredentialsService:
     def __init__(
@@ -30,41 +28,45 @@ class CredentialsService:
         request: Request,
         identity_repo: IdentityInterface,
         user_repo: UserInterface,
-        session_service: SessionService,
+        token_service: TokenService,
         uow: UoW,
     ):
         self.identity_repo = identity_repo
         self.user_repo = user_repo
-        self.session_service = session_service
+        self.token_service = token_service
         self.uow = uow
         self.request = request
-    
+        
+        
+    @staticmethod
+    def _check_password(password: str, password_hash: bytes) -> bool:
+        try:
+            valid = pwd_context.verify(password.encode(), password_hash)
+            if not valid:
+                raise WrongCredentials()
+        except ValueError:
+            raise WrongCredentials()
+        
+        return valid
+        
+    @staticmethod
+    def _hash_password(password: str) -> bytes:
+        return pwd_context.hash(password).encode()
+        
     
     async def register(
         self,
-        payload: UserRegister,
-        ttl: int
+        payload: UserRegister
     ) -> User:
-        identifier = payload.email or payload.phone_number
         
-        hashed_password = bcrypt.hashpw(
-            password=payload.password.encode(),
-            salt=bcrypt.gensalt()
-        ).decode()
-        
+        password_hash = self._hash_password(payload.password)
+
         user = User(
             secure_code="".join([random.choice(string.ascii_letters) for _ in range(64)]),
+            email=payload.email,
+            password_hash=password_hash,
             allow_password_login=True,
         )
-        identity = Identity(
-            provider=Provider.PASSWORD,
-            external_id=identifier,
-            secret_hash=hashed_password,
-            verified=False,
-            meta={"is_email": payload.email is not None},
-            # last_login_at=datetime.now(UTC)
-        )
-        user.identities.append(identity)
         
         wallet = Wallet(currency='USD')
         user.wallets.append(wallet)
@@ -76,61 +78,35 @@ class CredentialsService:
         except IntegrityError as e:
             raise AlreadyExists()
         
-        session_id = await self.session_service.create_session(user.id, ttl)
-        self.request.session['session_id'] = session_id
-        
-        return user
+        access, refresh = await self.token_service.create_tokens(user.id)
+        return access, refresh
     
     
-    async def login(self, payload: UserLogin, ttl: int) -> User:
-        identifier = payload.email or payload.phone_number
-        result = await self.identity_repo.get_user_and_secret(identifier)
-        if result is None:
-            raise WrongCredentials()
-        
-        user, password = result
-        try:
-            is_valid = bcrypt.checkpw(payload.password.encode(), password.encode())
-        except Exception:
+    async def login(self, payload: UserLogin) -> User:
+        user = await self.user_repo.get_by_email(payload.email)
+        if user is None:
             raise WrongCredentials()
 
-        if not is_valid:
-            raise WrongCredentials()
+        self._check_password(payload.password, user.password_hash)
         
-        session_id = await self.session_service.create_session(user.id, ttl)
-        self.request.session['session_id'] = session_id
-        
-        return user
+        access, refresh = await self.token_service.create_tokens(user.id)
+        return access, refresh
     
     
-    async def logout(self) -> None:
-        session_id = self.request.session['session_id']
+    async def logout(self, refresh_token: str) -> None:
+        await self.token_service.revoke(refresh_token)
+
+
+    async def link(self, user_id: UUID, payload: UserRegister) -> None:
+        """Completing profile"""
+        user = await self.user_repo.get_by_id(user_id)
+        if user is None:
+            raise NotFound()
         
-        await self.session_service.revoke_session(session_id)
+        if user.email is not None:
+            raise EmailAlreadySet()
+        
+        password_hash = self._hash_password(payload.password)
 
-
-    async def link(self, identifier: str, user: User) -> None:
-        """Link additional email or phone to the user."""
-        base_identity = await self.identity_repo.find_password_by_user_id(user.id)
-        if base_identity is None:
-            raise NotAuthenticated
-
-        existing = await self.identity_repo.find(Provider.PASSWORD, identifier)
-        if existing is not None:
-            raise AlreadyExists()
-
-        identity = Identity(
-            user_id=user.id,
-            provider=Provider.PASSWORD,
-            external_id=identifier,
-            secret_hash=base_identity.secret_hash,
-            verified=False,
-            meta={"is_email": "@" in identifier},
-        )
-
-        await self.identity_repo.add(identity)
-
-        try:
-            await self.uow.session.flush()
-        except IntegrityError:
-            raise AlreadyExists()
+        user.email = payload.email
+        user.password_hash = password_hash

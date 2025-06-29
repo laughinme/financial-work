@@ -2,7 +2,7 @@ from fastapi import HTTPException
 
 class InvalidTelegramSignature(HTTPException):
     def __init__(self, *args, **kwargs):
-        super().__init__(status_code=403, detail='Invalid telegram signature')
+        super().__init__(status_code=401, detail='Invalid telegram signature')
 
 
 class AlreadyLinked(HTTPException):

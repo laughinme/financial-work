@@ -1,8 +1,12 @@
 import uuid
-from datetime import datetime
 
 from sqlalchemy import (
-    UUID, String, Enum, ForeignKey, Boolean, JSON, UniqueConstraint, DateTime
+    UUID,
+    String,
+    Enum,
+    ForeignKey,
+    JSON,
+    UniqueConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,8 +26,6 @@ class Identity(TimestampMixin, Base):
     )
     provider: Mapped[Provider] = mapped_column(Enum(Provider), nullable=False)
     external_id: Mapped[str] = mapped_column(String, nullable=False)
-    secret_hash: Mapped[str | None] = mapped_column(String, nullable=True)
-    verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=False)
 

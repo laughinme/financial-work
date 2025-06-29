@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.create_table('identities',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
-    sa.Column('provider', sa.Enum('PASSWORD', 'TELEGRAM', 'GOOGLE', 'APPLE', name='provider'), nullable=False),
+    sa.Column('provider', sa.Enum('TELEGRAM', 'GOOGLE', 'APPLE', name='provider'), nullable=False),
     sa.Column('external_id', sa.String(), nullable=False),
     sa.Column('secret_hash', sa.String(), nullable=True),
     sa.Column('verified', sa.Boolean(), nullable=False),

@@ -1,12 +1,43 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
 
+import { getAccessToken, setAccessToken, clearTokens } from '../auth/storage';
+
 const request = async (method, url, body) => {
-  const res = await fetch(`${API_URL}${url}`, {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getAccessToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  let res = await fetch(`${API_URL}${url}`, {
     method,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
+    credentials: 'include',
   });
+
+  if (res.status === 401) {
+    try {
+      const r = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (r.ok) {
+        const data = await r.json();
+        setAccessToken(data.access_token);
+        headers['Authorization'] = `Bearer ${data.access_token}`;
+        res = await fetch(`${API_URL}${url}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+          credentials: 'include',
+        });
+      } else {
+        clearTokens();
+      }
+    } catch {
+      clearTokens();
+    }
+  }
 
   /* ——— 401 / 403 ——— */
   if (res.status === 401 || res.status === 403) {

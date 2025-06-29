@@ -1,16 +1,28 @@
 // src/api/auth.js
 import http from "./http";
+import { setAccessToken, clearTokens } from "../auth/storage";
 
 /** POST /api/v1/auth/login  */
-export const login = (email, password) =>
-  http.post("/api/v1/auth/login", { email, password });
+export const login = async (email, password) => {
+  const res = await http.post("/api/v1/auth/login", { email, password });
+  setAccessToken(res.access_token);
+  return res;
+};
 
 /** POST /api/v1/auth/register */
-export const register = (email, password) =>
-  http.post("/api/v1/auth/register", { email, password });
+export const register = async (email, password) => {
+  const res = await http.post("/api/v1/auth/register", { email, password });
+  setAccessToken(res.access_token);
+  return res;
+};
 
 /** POST /api/v1/auth/logout */
-export const logout = () => http.post("/api/v1/auth/logout");
+export const logout = () => {
+  clearTokens();
+  return http.post("/api/v1/auth/logout");
+};
+
+export const refresh = () => http.post("/api/v1/auth/refresh");
 
 /** POST /api/v1/auth/external/telegram/callback */
 export const loginWithTelegram = (payload) =>

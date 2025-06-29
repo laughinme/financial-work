@@ -5,22 +5,32 @@ import Log   from "./auth/log/log.jsx";
 import Reg   from "./auth/reg/reg.jsx";
 import Reset from "./auth/log/reset.jsx";
 
-import { getMe } from "./api/users";          
+import { getMe } from "./api/users";
+import { getAccessToken, setAccessToken } from "./auth/storage";
+import { refresh } from "./api/auth";
 
 function AuthSwitcher() {
   const [mode, setMode] = useState("loading"); 
 
-  /* ───── check cookie session ───── */
+  /* ───── check refresh cookie ───── */
   useEffect(() => {
-    getMe()
+    if (getAccessToken()) {
+      getMe()
+        .then(() => {
+          window.location.href = "/main.html#/dashboard";
+        })
+        .catch(() => setMode("login"));
+      return;
+    }
+    refresh()
+      .then((d) => {
+        setAccessToken(d.access_token);
+        return getMe();
+      })
       .then(() => {
-        // session valid, redirect to dashboard
         window.location.href = "/main.html#/dashboard";
       })
-      .catch(() => {
-        // 401 / 403 
-        setMode("login");
-      });
+      .catch(() => setMode("login"));
   }, []);
 
   /* render nothing while waiting */

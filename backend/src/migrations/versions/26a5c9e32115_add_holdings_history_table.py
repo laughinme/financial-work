@@ -1,7 +1,7 @@
 """add holdings_history table
 
 Revision ID: 26a5c9e32115
-Revises: aad8edf2434c
+Revises: 34b6c15d6bd1
 Create Date: 2025-06-17 17:13:52.465874
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '26a5c9e32115'
-down_revision: Union[str, None] = 'aad8edf2434c'
+down_revision: Union[str, None] = '34b6c15d6bd1'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

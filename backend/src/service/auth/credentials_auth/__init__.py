@@ -8,17 +8,17 @@ from database.relational_db import (
     UserInterface,
 )
 from .credentials_service import CredentialsService
-from ..session import get_session_service, SessionService
+from ..tokens import TokenService, get_token_service
 
 
 async def get_credentials_service(
     request: Request,
     uow: Annotated[UoW, Depends(get_uow)],
-    session_service: Annotated[SessionService, Depends(get_session_service)],
+    token_service: Annotated[TokenService, Depends(get_token_service)],
 ) -> CredentialsService:
     identity_repo = IdentityInterface(uow.session)
     user_repo = UserInterface(uow.session)
 
     return CredentialsService(
-        request, identity_repo, user_repo, session_service, uow
+        request, identity_repo, user_repo, token_service, uow
     )

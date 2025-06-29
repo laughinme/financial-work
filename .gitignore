@@ -181,3 +181,4 @@ node_modules/
 test.py
 /_temp
 /nginx/ssl
+/secrets

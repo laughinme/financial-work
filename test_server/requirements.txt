@@ -58,7 +58,6 @@ typing-inspection==0.4.1
 typing_extensions==4.13.2
 tzlocal==5.3.1
 urllib3==2.4.0
-uuid_utils==0.10.0
 uvicorn==0.34.2
 websockets==11.0.3
 wrapt==1.17.2

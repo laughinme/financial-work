@@ -13,7 +13,7 @@ router = AuthRouter()
     path='/telegram',
     response_model=UserSchema,
     responses={
-        403: {"description": "Invalid telegram signature"},
+        401: {"description": "Invalid telegram signature"},
         409: {"description": "Telegram account already linked"}
     }
 )

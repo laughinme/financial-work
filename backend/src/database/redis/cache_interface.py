@@ -9,8 +9,7 @@ class CacheRepo():
         await self.redis.set(name, value, ex=ttl)
         
     async def get(self, name: str) -> str | None:
-        data = await self.redis.get(name)
-        return data
+        return await self.redis.get(name)
     
     async def delete(self, *names: str) -> None:
         await self.redis.delete(*names)

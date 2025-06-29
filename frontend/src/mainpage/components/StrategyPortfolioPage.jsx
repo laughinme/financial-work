@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FiZap, FiChevronLeft } from 'react-icons/fi';
 import dayjs from 'dayjs';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 import Sidebar from './Sidebar';
 import BalanceEquityChart from './charts/BalanceEquityChart';
@@ -366,7 +367,9 @@ export default function StrategyPortfolioPage() {
             <div
               className="md"
               dangerouslySetInnerHTML={{
-                __html: marked.parse(strat.description || ''),
+                __html: DOMPurify.sanitize(
+                  marked.parse(strat.description || '')
+                ),
               }}
             />
           </section>

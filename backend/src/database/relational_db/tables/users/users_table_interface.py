@@ -1,6 +1,3 @@
-import random
-import string
-
 from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,24 +10,27 @@ class UserInterface:
         self.session = session
     
     
-    @staticmethod
-    def create() -> User:
-        user = User(
-            secure_code="".join([random.choice(string.ascii_letters) for _ in range(64)]),
-        )
-        return user
-    
-    
     async def add(self, user: User) -> User:
         self.session.add(user)
         return user
     
     
-    async def get_by_id(self, id: UUID) -> User | None:
+    async def get_by_id(self, user_id: UUID) -> User | None:
         user = await self.session.scalar(
             select(User)
             .where(
-                User.id == id
+                User.id == user_id
+            )
+        )
+        
+        return user
+    
+    
+    async def get_by_email(self, email: str) -> User | None:
+        user = await self.session.scalar(
+            select(User)
+            .where(
+                User.email == email
             )
         )
         

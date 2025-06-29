@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -6,11 +5,11 @@ import dayjs from "dayjs";
 import "../global.css";
 import "./dashboard.css";
 
-import Sidebar            from "./components/Sidebar";
-import SparklineChart     from "./components/charts/SparklineChart";
-import HoldingsCarousel   from "./components/HoldingsCarousel";
-import MoneyModal         from "./components/ui/MoneyModal";
-import TimeRangeSelector  from "./components/TimeRangeSelector";
+import Sidebar from "./components/Sidebar";
+import SparklineChart from "./components/charts/SparklineChart";
+import HoldingsCarousel from "./components/HoldingsCarousel";
+import MoneyModal from "./components/ui/MoneyModal";
+import TimeRangeSelector from "./components/TimeRangeSelector";
 
 import {
   ResponsiveContainer,
@@ -27,8 +26,8 @@ import {
   YAxis,
 } from "recharts";
 
-import { usePortfolio  } from "../contexts/PortfolioContext";
-import { clearCurrent  } from "../auth/storage";
+import { usePortfolio } from "../contexts/PortfolioContext";
+import { clearCurrent, clearTokens } from "../auth/storage";
 import { logout as logoutApi } from "../api/auth";
 
 import {
@@ -43,8 +42,7 @@ import { listTransactions } from "../api/transactions";
 
 /* ───── helpers ───── */
 const fmtMoney = (n) => "$" + (+n).toLocaleString();
-const colored  = (n) => (+n >= 0 ? "text-green-600" : "text-red-600");
-
+const colored = (n) => (+n >= 0 ? "text-green-600" : "text-red-600");
 
 const RANGES = [
   { label: "1M", days: 30 },
@@ -65,7 +63,7 @@ export default function DashboardPage() {
 
   /* ─── summary / balance ─── */
   const [summary, setSummary] = useState(null);
-  const [payBal, setPayBal]   = useState(null);
+  const [payBal, setPayBal] = useState(null);
 
   useEffect(() => {
     getSummary().then(setSummary).catch(console.error);
@@ -77,13 +75,13 @@ export default function DashboardPage() {
   }, []);
 
   /* ─── charts ─── */
- 
+
   const [rangePnl, setRangePnl] = useState(180);
   const [rangeVal, setRangeVal] = useState(180);
 
   const [pnlData, setPnl] = useState([]);
   const [valData, setVal] = useState([]);
-  const [alloc,   setAlloc] = useState([]);
+  const [alloc, setAlloc] = useState([]);
 
   useEffect(() => {
     getDailyPnl(rangePnl)
@@ -100,7 +98,7 @@ export default function DashboardPage() {
   }, [rangePnl, rangeVal]);
 
   /* ─── transactions ─── */
-  const [tx, setTx]       = useState(null);
+  const [tx, setTx] = useState(null);
   const [showAll, setShow] = useState(false);
 
   useEffect(() => {
@@ -130,6 +128,7 @@ export default function DashboardPage() {
     try {
       await logoutApi();
     } catch {}
+    clearTokens();
     clearCurrent();
     navigate("/", { replace: true });
   };
@@ -137,8 +136,8 @@ export default function DashboardPage() {
   if (!summary) return null;
 
   const totalEquity = +summary.total_equity || 0;
-  const totalPnl    = +summary.total_pnl    || 0;
-  const todayPnl    = +summary.today_pnl    || 0;
+  const totalPnl = +summary.total_pnl || 0;
+  const todayPnl = +summary.today_pnl || 0;
 
   /* ─────────── render ─────────── */
   return (
@@ -228,10 +227,7 @@ export default function DashboardPage() {
                       animationDuration={800}
                     >
                       {pnlData.map((d, i) => (
-                        <Cell
-                          key={i}
-                          fill={d.pl < 0 ? "#EF4444" : "#10B981"}
-                        />
+                        <Cell key={i} fill={d.pl < 0 ? "#EF4444" : "#10B981"} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -269,10 +265,7 @@ export default function DashboardPage() {
                       <ResponsiveContainer width="100%" height={240}>
                         <PieChart>
                           <Tooltip
-                            formatter={(v, n) => [
-                              `${(+v).toFixed(2)} %`,
-                              n,
-                            ]}
+                            formatter={(v, n) => [`${(+v).toFixed(2)} %`, n]}
                           />
                           <Pie
                             data={data}
