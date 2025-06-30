@@ -43,8 +43,7 @@ class TelegramService:
     @staticmethod
     def _verify(payload: TelegramAuthSchema) -> None:
         data = payload.model_dump(exclude_none=True)
-        logger.info(data)
-        check_hash = data.pop("hash").encode()
+        check_hash = data.pop("hash")
         
         data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
         secret_key = hashlib.sha256(config.BOT_TOKEN.encode()).digest()
@@ -52,17 +51,16 @@ class TelegramService:
             secret_key,
             msg=data_check_string.encode(),
             digestmod=hashlib.sha256
-        ).digest()
-        
-        logger.info(f'{hmac_hash}, {check_hash}')
+        ).hexdigest()
 
-        if secrets.compare_digest(secret_key, check_hash):
+        if not secrets.compare_digest(hmac_hash, check_hash):
             logger.error('Invalid Hash')
             raise InvalidTelegramSignature()
         
         # Reject payloads that are older than 24 hours to prevent replay attacks
         now_ts = int(datetime.now(UTC).timestamp())
         if now_ts - data["auth_date"] > 60 * 60 * 24:
+            logger.error('Login expired')
             raise InvalidTelegramSignature()
         
         
