@@ -1,38 +1,48 @@
 import React, { useEffect, useState } from "react";
 import "./moneyModal.css";
 
-
 export default function MoneyModal({
   open,
   title = "Enter amount",
   label = "Amount",
   navPrice = null,
-  mode = "invest",
+  mode = "invest",        
   onClose = () => {},
   onSubmit = () => {},
 }) {
   const [val, setVal] = useState("");
 
-
+  
   useEffect(() => {
     if (open) setVal("");
   }, [open]);
 
   if (!open) return null;
 
-
+ 
   let hint = null;
   const num = Number(val) || 0;
 
   if (navPrice && num > 0) {
     if (mode === "invest") {
       const units = num / navPrice;
-      hint = `$${num.toFixed(2)} ≈ ${units.toFixed(6)} u   ·   1 u = $${navPrice}`;
+      hint = (
+        <>
+          <div>{`$${num.toFixed(2)} ≈ ${units.toFixed(6)} u`}</div>
+          <div>{`1 u = $${navPrice}`}</div>
+        </>
+      );
     } else {
       const usd = navPrice * num;
-      hint = `${num} u ≈ $${usd.toFixed(2)}   ·   1 u = $${navPrice}`;
+      hint = (
+        <>
+          <div>{`${num} u ≈ $${usd.toFixed(2)}`}</div>
+          <div>{`1 u = $${navPrice}`}</div>
+        </>
+      );
     }
   }
+
 
   const handleOk = async () => {
     const n = Number(val);
@@ -47,6 +57,7 @@ export default function MoneyModal({
       alert(e?.message || "Request failed");
     }
   };
+
 
   return (
     <div className="mm-overlay" onClick={onClose}>
@@ -63,7 +74,7 @@ export default function MoneyModal({
           step="any"
         />
 
-        {hint && <p className="mm-hint">{hint}</p>}
+        {hint && <div className="mm-hint">{hint}</div>}
 
         <div className="mm-actions">
           <button className="mm-btn" onClick={onClose}>
